@@ -21,7 +21,21 @@ in [Connecting an MCP client](integrations/mcp-clients.md).
 
 ## Install: single user, own machine
 
-From the first public package-index release, one command is enough:
+The alpha is available from the
+[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1)
+and [TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). Install it in a
+fresh virtual environment:
+
+<!-- docs-check: skip - installs from TestPyPI over the network -->
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install --index-url https://test.pypi.org/simple/ --no-deps noetrail==0.10.0a1
+.venv/bin/noetrail quickstart
+```
+
+Production PyPI publication is still pending. After that approval, the default
+package-index command will work:
 
 <!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
 
@@ -29,7 +43,7 @@ From the first public package-index release, one command is enough:
 uvx noetrail quickstart          # or: pipx run noetrail quickstart
 ```
 
-Today, install from a checkout and run the same command:
+Today, install from a checkout as an alternative and run the same command:
 
 <!-- docs-check: skip - installs from the network -->
 

@@ -2,7 +2,10 @@
 
 ## Distribution decision
 
-The first public alpha is `0.10.0a1`. The number preserves Noetrail's internal
+The first public alpha is `0.10.0a1`, available from
+[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1) and
+[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). Production PyPI
+publication is still pending. The number preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
 The intended channels are:
@@ -22,8 +25,9 @@ project. See the
 [official PyPI setup guide](https://docs.pypi.org/trusted-publishers/) and
 [publisher configuration](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
 
-Repository visibility and the first PyPI upload remain explicit publication
-gates. Preparing or testing artifacts does not cross either gate.
+The source repository, GitHub prerelease and TestPyPI upload have been
+approved and published. The first production PyPI upload remains an explicit
+publication gate; the `pypi` reviewer must approve the tested tag artifacts.
 
 ### One-time setup before the first upload
 
@@ -128,12 +132,12 @@ in one pass, with the text to search for:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**When `0.10.0a1` is on a public package index**
+**When `0.10.0a1` is on production PyPI**
 
 | Page | Says today |
 | --- | --- |
 | `README.md` | "That line is not live yet" |
-| `docs/quickstart.md` | "is not on a public package index yet" |
+| `docs/quickstart.md` | "Production PyPI publication is still pending" |
 | `docs/installation.md` | "Today, install from a checkout" |
 | `docs/integrations/mcp-clients.md` | "From a checkout today" |
 

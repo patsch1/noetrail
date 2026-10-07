@@ -63,7 +63,7 @@ session and fails if the recording no longer matches the program's output.
 `noetrail quickstart` creates an instance, writes a few sample entries, and
 prints the exact MCP server block your client wants. Nothing else to decide.
 
-**From the first package-index release** — no checkout, no virtual environment:
+**After the production PyPI upload** — no checkout, no virtual environment:
 
 <!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
 
@@ -71,9 +71,12 @@ prints the exact MCP server block your client wants. Nothing else to decide.
 uvx noetrail quickstart          # or: pipx run noetrail quickstart
 ```
 
-That line is not live yet: `0.10.0a1` has not been uploaded, and this project
-does not ship a badge or a link for a package that does not exist. **What works
-today** is a checkout. Python 3.11 or newer, no third-party dependencies:
+That line is not live yet on PyPI. `0.10.0a1` is available from the
+[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1)
+and [TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/); see
+[installation](https://github.com/patsch1/noetrail/blob/main/docs/installation.md#install-single-user-own-machine) for the
+TestPyPI command. A checkout also works. Python 3.11 or newer, no third-party
+dependencies:
 
 <!-- docs-check: skip - installs from the network; the doc runner substitutes a local entry point -->
 
@@ -250,7 +253,8 @@ suite inside the unpacked archive, then builds a wheel, installs it in a clean
 virtual environment, migrates a synthetic schema-8 vault to schema 12, validates
 it, restores the pre-migration backup, and validates that rollback boundary.
 
-Noetrail `0.10.0a1` is the first planned public alpha. The release workflow
+Noetrail `0.10.0a1` is the first public alpha, available on GitHub and TestPyPI.
+The release workflow
 builds the wheel and source distribution, rebuilds them and compares, attaches
 a build-provenance attestation and a CycloneDX bill of materials, and uploads
 to PyPI through Trusted Publishing from a protected environment. The source

@@ -53,7 +53,10 @@ server alias shown in that client.
 
 ## Install and get the configuration block
 
-From the first public package-index release:
+The alpha is available on TestPyPI; its
+[installation command](../installation.md#install-single-user-own-machine)
+installs the same CLI and MCP entry points. Production PyPI publication is
+still pending. After that approval, use the default package index:
 
 <!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
 

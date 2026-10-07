@@ -241,7 +241,8 @@ class DocumentationTest(unittest.TestCase):
         # No package index badge while nothing is published: it would render
         # as "invalid" or, worse, as a version that does not exist.
         self.assertNotIn("img.shields.io/pypi", readme)
-        self.assertNotIn("pypi.org/project/noetrail", readme)
+        # TestPyPI is published; the production PyPI URL remains premature.
+        self.assertNotRegex(readme, r"https?://pypi\.org/project/noetrail(?:/|\b)")
 
         # The CI badge has to point at a workflow that exists.
         self.assertIn(
