@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage trash"
+  short_description: "Delete and restore entries safely"
+  default_prompt: "Use $manage-trash to move, restore, list, or permanently purge knowledge entries safely."

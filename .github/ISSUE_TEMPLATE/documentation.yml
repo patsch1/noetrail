@@ -1,0 +1,75 @@
+name: Documentation problem
+description: A documented step is wrong, missing, unclear, or out of date.
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The shell blocks in `README.md` and `docs/quickstart.md` are executed
+        by the test suite, so a failing block there is a real defect. Blocks in
+        other documents are not, and a report is the only way they get fixed.
+
+        Redact absolute paths that contain personal names.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before reporting
+      options:
+        - label: I searched the existing open and closed issues.
+          required: true
+        - label: This report contains no personal vault content or credentials.
+          required: true
+  - type: input
+    id: document
+    attributes:
+      label: Document
+      description: Repository path, and the heading or line if you have it.
+      placeholder: "docs/quickstart.md, section 'Import Markdown'"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Noetrail version
+      description: Output of `noetrail --version`. Documentation is versioned with the program.
+      placeholder: "noetrail 0.10.0a1"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python3 -V`.
+      placeholder: "Python 3.13.2"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Ubuntu 24.04"
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`noetrail doctor` output"
+      description: Most documentation problems are really a mismatch between the documented layout and the actual one. This report shows which it is.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+      description: Quote the documented text, then say what actually happens or what is missing. Include the command and its sanitized output if a documented step failed.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording
+      description: Optional. A concrete replacement is usually faster than a discussion.
+    validations:
+      required: false

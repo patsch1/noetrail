@@ -1,0 +1,173 @@
+name: Release artifacts
+
+# The previous filter was `v[0-9]+.[0-9]+.[0-9]+a[0-9]+`, which matches alpha
+# tags and nothing else: `v1.0.0`, `v0.11.0`, and `v0.10.0rc1` produced no
+# release build at all, silently. Final, alpha, beta, and release-candidate
+# tags are now listed explicitly rather than covered by a wildcard, so a typo
+# in a tag still fails loudly instead of shipping.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+a[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+b[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
+
+# The workflow default is the least privilege any job needs. The three jobs
+# that mint an OIDC token raise it for themselves; the job that compiles the
+# code never can.
+permissions:
+  contents: read
+
+# Third-party actions are pinned to a commit SHA. A mutable major tag can be
+# repointed at new code without any change in this repository, so the version
+# in the trailing comment is documentation only.
+jobs:
+  build:
+    name: Build and accept
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Deliberately no `id-token: write` here. This is the job that runs the
+    # project's own build, its test suite, and the setuptools backend; giving
+    # it the ability to mint a PyPI-facing OIDC token would mean any of that
+    # code could publish. Uploading to an index happens in a later job that
+    # only ever sees finished files.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Verify version, schema, notes, and release tag agree
+        run: python tools/check_release_consistency.py
+      - name: Install build frontend
+        run: python -m pip install build==1.5.1
+      # A build that embeds "now" produces a different artifact every run and
+      # cannot be checked by anyone. The tagged commit's own commit date is a
+      # value both the maintainer and a third party can look up.
+      - name: Pin the build timestamp to the tagged commit
+        run: |
+          echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "${GITHUB_ENV}"
+      # docs/releasing.md promises PyPI the identical artifacts that were
+      # reviewed here, and PyPI expects a source distribution next to the
+      # wheel, so both are built and uploaded from this one run.
+      - name: Build source distribution and wheel
+        run: python -m build --sdist --wheel --outdir dist
+      - name: Verify the suite runs from the unpacked source distribution
+        run: |
+          mkdir -p "${RUNNER_TEMP}/sdist"
+          tar xzf dist/noetrail-*.tar.gz -C "${RUNNER_TEMP}/sdist"
+          cd "${RUNNER_TEMP}/sdist"/noetrail-*/
+          python -m unittest discover -s tests -t .
+      - name: Run installed-wheel upgrade and restore acceptance
+        run: python tools/release_acceptance.py --wheel dist/noetrail-*.whl
+      # Builds the whole thing a second time from a copy of the tree and
+      # compares. The wheel has to match byte for byte; the source
+      # distribution has to match in content, because setuptools' sdist
+      # ignores SOURCE_DATE_EPOCH and stamps filesystem modification times
+      # into the tar. See the script for the measurement behind that split.
+      - name: Rebuild and compare
+        run: python tools/check_reproducible.py --reference dist
+      # Zero runtime dependencies is a claim; a bill of materials derived from
+      # the packaging metadata is the checkable form of it.
+      - name: Generate the software bill of materials
+        run: |
+          python tools/generate_sbom.py \
+            --output dist/noetrail-sbom.cdx.json \
+            --distribution dist/noetrail-*.whl \
+            --distribution dist/noetrail-*.tar.gz
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum noetrail-*.whl noetrail-*.tar.gz noetrail-sbom.cdx.json > SHA256SUMS.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: noetrail-release-${{ github.ref_name }}
+          path: dist/
+          if-no-files-found: error
+
+  attest:
+    name: Attest build provenance
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Sigstore signing needs an OIDC token, and the attestation is written to
+    # the repository's attestation store. This job downloads finished files
+    # and runs no project code.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: noetrail-release-${{ github.ref_name }}
+          path: dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/noetrail-*.whl
+            dist/noetrail-*.tar.gz
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: [build, attest]
+    # `workflow_dispatch` is used to rehearse a build; it must not upload.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/noetrail
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: noetrail-release-${{ github.ref_name }}
+          path: staging
+      # The uploader sends everything in the directory it is given, and the
+      # artifact also carries `SHA256SUMS.txt` and the bill of materials.
+      # Those belong in the GitHub Release, not in a package index.
+      - name: Keep only the distributions
+        run: |
+          mkdir dist
+          mv staging/noetrail-*.whl staging/noetrail-*.tar.gz dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # TestPyPI is the rehearsal. Re-running the workflow for a tag whose
+          # files are already there must not block the real upload; PyPI keeps
+          # the default, where a duplicate is an error.
+          skip-existing: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: publish-testpypi
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The `pypi` environment is restricted to v* tags. A required reviewer is
+    # also a publication gate; GitHub does not offer that rule on the current
+    # private-repository plan, so docs/releasing.md keeps publication blocked
+    # until the rule can actually be enabled. Trusted Publishing is bound to
+    # this repository, workflow file, and environment name.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/noetrail
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: noetrail-release-${{ github.ref_name }}
+          path: staging
+      - name: Keep only the distributions
+        run: |
+          mkdir dist
+          mv staging/noetrail-*.whl staging/noetrail-*.tar.gz dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

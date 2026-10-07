@@ -1,0 +1,77 @@
+name: Feature request
+description: Propose a bounded change in behavior.
+title: "feature: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Noetrail is a one-person project before `1.0`. A proposal that names
+        the problem, the smallest change that solves it, and what it would
+        cost has a much better chance than a list of wishes.
+
+        ROADMAP.md lists what is planned and what is deliberately out of
+        scope. Please check it first.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before proposing
+      options:
+        - label: I searched the existing open and closed issues.
+          required: true
+        - label: I read ROADMAP.md and this is not already listed as a non-goal.
+          required: true
+        - label: This request contains no personal vault content or credentials.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Noetrail version
+      description: Output of `noetrail --version`, so the proposal is read against the right behavior.
+      placeholder: "noetrail 0.10.0a1"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python3 -V`.
+      placeholder: "Python 3.13.2"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.3"
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`noetrail doctor` output"
+      description: The report from the instance the proposal is about. It shows the schema version, the loaded packs, and the layout the request has to fit.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to do today, and where the current commands or MCP tools stop you. Describe the situation, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: The smallest change that would solve it. Name the affected surface — CLI, MCP, schema packs, on-disk format, documentation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and impact
+      description: What you considered instead, and what this would cost — a data-format change, a migration, a new dependency, a wider agent permission. Say so if you do not know.
+    validations:
+      required: true

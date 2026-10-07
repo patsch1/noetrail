@@ -1,0 +1,53 @@
+name: CodeQL
+
+# Static analysis on the Python sources. Runs on the same events as CI plus a
+# weekly schedule, because CodeQL queries are updated independently of this
+# repository and a finding can appear without any commit here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 5 * * 1"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Third-party actions are pinned to a commit SHA. A mutable major tag can be
+# repointed at new code without any change in this repository, so the version
+# in the trailing comment is documentation only.
+jobs:
+  analyze:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Code scanning needs GitHub Advanced Security on a private repository; on
+    # a personal plan CodeQL is only free for public ones. Without it the job
+    # fails during init with a permissions error rather than a finding, which
+    # is noise on every pull request and would block a required check for a
+    # reason that has nothing to do with the code. Skipping while private
+    # keeps the workflow honest: it starts analysing by itself the moment the
+    # repository is published, with no change here.
+    if: github.event.repository.private == false
+    permissions:
+      # Writing the results into the repository's code-scanning view is the
+      # only extra permission this job needs.
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: python
+          build-mode: none
+          queries: security-and-quality
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: "/language:python"

@@ -1,0 +1,96 @@
+name: Bug report
+description: Something behaves differently than documented, or fails.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        SUPPORT.md asks for the environment and a `noetrail doctor` report with
+        every issue. This form requires it, because a bug report without it
+        usually costs one round trip before anything can be looked at.
+
+        Use synthetic data. Never paste a real vault entry, export,
+        attachment, URL with personal content, token, or infrastructure
+        detail. Redact absolute paths that contain names.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before reporting
+      options:
+        - label: I searched the existing open and closed issues.
+          required: true
+        - label: I can reproduce this with synthetic data in a temporary vault, or I explain below why not.
+          required: true
+        - label: This report contains no personal vault content, credentials, or private infrastructure details.
+          required: true
+        - label: This is not a security vulnerability. Those go to the private channel in SECURITY.md.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Noetrail version
+      description: Output of `noetrail --version`.
+      placeholder: "noetrail 0.10.0a1"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python3 -V`.
+      placeholder: "Python 3.13.2"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Name and version, plus the filesystem if the vault is not on local storage.
+      placeholder: "Debian 13, ext4"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Command surface
+      options:
+        - CLI
+        - Noetrail MCP
+        - bookmark fetcher
+        - both CLI and MCP
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`noetrail doctor` output"
+      description: Run `noetrail doctor` against the affected instance and paste the JSON report unchanged, except for paths you need to redact.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands, in order, starting from a state a reader can create.
+      placeholder: |
+        1. noetrail --data-root "$T/data" --config-root "$T/config" init
+        2. noetrail ... capture --type thought --title "synthetic" --text "synthetic"
+        3. noetrail ... search synthetic
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+      description: What you expected, what happened, and the sanitized error or exit code.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Schema packs in use, vault size, MCP client, container deployment. Optional.
+    validations:
+      required: false

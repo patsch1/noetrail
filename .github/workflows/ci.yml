@@ -1,0 +1,153 @@
+name: CI
+
+# An unfiltered `push` plus `pull_request` ran every job twice for any branch
+# that had an open pull request. Pushes are now limited to the branch and the
+# tags that are worth a run on their own; everything else arrives via the
+# pull-request event.
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+a[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+b[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
+  pull_request:
+
+# Only the newest commit of a ref is interesting; superseded runs are cancelled
+# instead of competing for runners.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Third-party actions are pinned to a commit SHA. A mutable major tag can be
+# repointed at new code without any change in this repository, so the version
+# in the trailing comment is documentation only.
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install linter
+        run: python -m pip install ruff==0.14.0
+      - name: Check style and common defects
+        run: python -m ruff check .
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # The lowest supported interpreter: mypy resolves version-conditional
+          # standard-library stubs against the running Python, so checking on
+          # 3.13 would not see what 3.11 users get.
+          python-version: "3.11"
+      - name: Install type checker
+        run: python -m pip install mypy==1.20.2
+      # Scope, strictness and per-module overrides live in pyproject.toml.
+      - name: Check types
+        run: python -m mypy
+
+  test:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        # One macOS job, not a second full matrix. Its purpose is the platform,
+        # not the interpreter: `/var` is a symlink there and `/tmp` on Linux is
+        # not, which is a difference the suite has already been wrong about.
+        # A macOS runner also bills at ten times a Linux one on a private
+        # repository, so the coverage is bought at one job, on the version the
+        # other gates use.
+        include:
+          - os: macos-latest
+            python-version: "3.13"
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run synthetic tests
+        run: python -m unittest discover -s tests -t . -v
+      - name: Check repository for secrets
+        run: python tools/check_secrets.py
+      - name: Check Git and private-data boundary
+        run: python tools/check_git_boundary.py
+      - name: Build wheel
+        run: python -m pip wheel . --wheel-dir "${RUNNER_TEMP}/wheel"
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      # `tools/coverage.py` is dependency-free and traces the child processes
+      # the suite starts, which is most of it. Thresholds live in that file and
+      # a shortfall fails this job.
+      - name: Measure statement coverage
+        run: python tools/coverage.py --json "${RUNNER_TEMP}/coverage.json"
+
+  sdist:
+    name: Source-distribution acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install build frontend
+        run: python -m pip install build==1.5.1
+      - name: Build source distribution
+        run: python -m build --sdist --outdir dist
+      # The sdist is the artifact a distribution packager rebuilds and tests
+      # from. Running the suite inside the unpacked archive is the only check
+      # that catches a file MANIFEST.in forgot -- `tests/__init__.py` was
+      # missing once, and nothing outside this job noticed.
+      - name: Run the suite from the unpacked source distribution
+        run: |
+          mkdir -p "${RUNNER_TEMP}/sdist"
+          tar xzf dist/noetrail-*.tar.gz -C "${RUNNER_TEMP}/sdist"
+          cd "${RUNNER_TEMP}/sdist"/noetrail-*/
+          python -m unittest discover -s tests -t . -v
+
+  installed-wheel:
+    name: Installed-wheel acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Build wheel
+        run: python -m pip wheel . --no-deps --wheel-dir dist
+      - name: Install and exercise the wheel
+        run: |
+          python tools/release_acceptance.py \
+            --wheel "$(find dist -name 'noetrail-*.whl' -print -quit)"

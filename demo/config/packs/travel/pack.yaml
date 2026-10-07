@@ -1,0 +1,26 @@
+format_version: 1
+id: "travel"
+version: 1
+title: "Travel demo"
+description: "Synthetic destinations used to demonstrate a local schema pack."
+types:
+  destination:
+    title: "Destination"
+    description: "A place somebody may want to visit."
+    body_sections: ["Why visit", "Ideas"]
+    fields:
+      country:
+        type: "string"
+        required: true
+        searchable: true
+        max_length: 200
+      visit_state:
+        type: "enum"
+        values: ["wishlist", "planned", "visited"]
+        default: "wishlist"
+        searchable: true
+      highlights:
+        type: "array"
+        items: "string"
+        max_items: 20
+        searchable: true

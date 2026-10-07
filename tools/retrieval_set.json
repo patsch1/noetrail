@@ -1,0 +1,359 @@
+{
+  "name": "noetrail-synthetic-retrieval-1",
+  "about": [
+    "A small retrieval set written for this repository. It is NOT an external",
+    "benchmark: the entries, the queries, and the relevance judgements were all",
+    "written by hand here, so a number measured on it says how the two ranking",
+    "modes compare on this corpus and nothing about how Noetrail compares to",
+    "another system. LoCoMo, LongMemEval and BEAM numbers are not reproducible",
+    "in this repository and none are claimed.",
+    "",
+    "The judgements were fixed while writing the entries, before either ranking",
+    "mode was run over them, and the query list deliberately contains cases the",
+    "substring path wins -- a prefix of a longer word and a singular form of a",
+    "plural -- because a set that only contains cases BM25 wins measures the",
+    "author, not the engine."
+  ],
+  "entries": [
+    {
+      "key": "c1",
+      "type": "note",
+      "title": "Espresso grind size notes",
+      "tags": ["coffee", "espresso"],
+      "text": "Dialling in the grinder: a finer grind raises extraction and pressure. Nine bar, twenty-five seconds, eighteen grams in and thirty-six out."
+    },
+    {
+      "key": "c2",
+      "type": "note",
+      "title": "Burr grinder cleaning",
+      "tags": ["coffee", "maintenance"],
+      "text": "Brushed the burrs and removed the old grounds. Stale oils turn the cup bitter after about two weeks."
+    },
+    {
+      "key": "c3",
+      "type": "note",
+      "title": "Water hardness for brewing",
+      "tags": ["coffee", "water"],
+      "text": "Soft water under-extracts and tastes flat. Aiming for around eighty parts per million total hardness."
+    },
+    {
+      "key": "c4",
+      "type": "note",
+      "title": "Cold brew ratio",
+      "tags": ["coffee"],
+      "text": "One to eight, sixteen hours in the fridge, coarse grind. Much less acidity than hot brewing."
+    },
+    {
+      "key": "c5",
+      "type": "note",
+      "title": "Bitter shots after the new bag",
+      "tags": ["coffee", "espresso"],
+      "text": "The last three shots tasted bitter and hollow. Probably over-extraction from too fine a grind."
+    },
+    {
+      "key": "b1",
+      "type": "note",
+      "title": "Sourdough starter routine",
+      "tags": ["baking", "sourdough"],
+      "text": "Feeds twice a day at room temperature, one to one to one. It doubles in five hours when it is healthy."
+    },
+    {
+      "key": "b2",
+      "type": "note",
+      "title": "Hydration and crumb",
+      "tags": ["baking", "sourdough"],
+      "text": "Seventy-eight per cent hydration gives an open crumb, but the dough is much harder to shape."
+    },
+    {
+      "key": "b3",
+      "type": "note",
+      "title": "Oven spring problems",
+      "tags": ["baking"],
+      "text": "Flat loaves again. Under-proofed dough and an oven that never reached temperature."
+    },
+    {
+      "key": "b4",
+      "type": "note",
+      "title": "Rye levain experiment",
+      "tags": ["baking", "sourdough"],
+      "text": "Whole rye levain at twenty per cent, sour and dense. Better on the second day."
+    },
+    {
+      "key": "y1",
+      "type": "note",
+      "title": "Chain wear measurement",
+      "tags": ["cycling", "maintenance"],
+      "text": "The gauge dropped in at zero point seven five, so the chain is done. Replacing it early saves the cassette."
+    },
+    {
+      "key": "y2",
+      "type": "note",
+      "title": "Hydraulic brake bleed",
+      "tags": ["cycling", "maintenance"],
+      "text": "Bled the rear brake with mineral oil. The lever felt spongy before and the bite point is back where it should be."
+    },
+    {
+      "key": "y3",
+      "type": "note",
+      "title": "Tubeless sealant top-up",
+      "tags": ["cycling"],
+      "text": "Sealant dries out after about four months. Thirty millilitres per tyre."
+    },
+    {
+      "key": "y4",
+      "type": "note",
+      "title": "Winter bearing service",
+      "tags": ["cycling", "maintenance"],
+      "text": "Repacked the bottom bracket bearings after the road salt. The grease had been washed out completely."
+    },
+    {
+      "key": "p1",
+      "type": "note",
+      "title": "Why the tests got slow",
+      "tags": ["programming", "testing"],
+      "text": "Every test built a fresh virtual environment. Caching it cut the suite from nine minutes to ninety seconds."
+    },
+    {
+      "key": "p2",
+      "type": "note",
+      "title": "Packaging without dependencies",
+      "tags": ["programming", "python"],
+      "text": "Standard library only. No wheels to audit and no supply chain to trust."
+    },
+    {
+      "key": "p3",
+      "type": "note",
+      "title": "Rust borrow checker notes",
+      "tags": ["programming", "rust"],
+      "text": "Lifetimes get easier once you stop fighting them and restructure the ownership instead."
+    },
+    {
+      "key": "p4",
+      "type": "note",
+      "title": "Flaky integration test",
+      "tags": ["programming", "testing"],
+      "text": "The failure only shows under load. A race between the writer thread and the reader thread."
+    },
+    {
+      "key": "p5",
+      "type": "note",
+      "title": "Profiling before optimising",
+      "tags": ["programming", "performance"],
+      "text": "Measured first. The bottleneck was interpreter startup, not the algorithm."
+    },
+    {
+      "key": "l1",
+      "type": "note",
+      "title": "Kreuzberg ramen place",
+      "tags": ["berlin", "food"],
+      "text": "Small counter, tonkotsu, a twenty minute wait on a Friday. Worth it."
+    },
+    {
+      "key": "l2",
+      "type": "note",
+      "title": "Neukoelln natural wine bar",
+      "tags": ["berlin", "drinks"],
+      "text": "Orange wine list, no reservations, and loud after nine."
+    },
+    {
+      "key": "l3",
+      "type": "note",
+      "title": "Prenzlauer Berg bakery",
+      "tags": ["berlin", "food"],
+      "text": "The best rye bread in the neighbourhood. Sold out by eleven."
+    },
+    {
+      "key": "l4",
+      "type": "note",
+      "title": "Late night noodles",
+      "tags": ["berlin", "food"],
+      "text": "Open until three, hand pulled noodles, cash only."
+    },
+    {
+      "key": "s1",
+      "type": "note",
+      "title": "Sleep and afternoon caffeine",
+      "tags": ["health", "sleep"],
+      "text": "Anything after two in the afternoon and I lie awake. The half-life is longer than I assumed."
+    },
+    {
+      "key": "s2",
+      "type": "note",
+      "title": "Running cadence",
+      "tags": ["health", "running"],
+      "text": "Shorter steps and a higher turnover mean less knee pain after the long runs."
+    },
+    {
+      "key": "s3",
+      "type": "note",
+      "title": "Desk setup and neck pain",
+      "tags": ["health"],
+      "text": "The monitor was far too low. Raised it and the pain went away in a week."
+    },
+    {
+      "key": "f1",
+      "type": "note",
+      "title": "Low light lens choice",
+      "tags": ["photography"],
+      "text": "The fast prime beats the zoom indoors. Wide open is soft but usable."
+    },
+    {
+      "key": "f2",
+      "type": "note",
+      "title": "Backup workflow for photos",
+      "tags": ["photography", "backup"],
+      "text": "Two local copies and one offsite. Verified the restore, not just the backup."
+    },
+    {
+      "key": "f3",
+      "type": "note",
+      "title": "Colour profiles for printing",
+      "tags": ["photography"],
+      "text": "Soft proofing changed the shadows more than expected."
+    },
+    {
+      "key": "m1",
+      "type": "note",
+      "title": "Kitchen water filter",
+      "tags": ["home"],
+      "text": "Replaced the filter cartridge. The water tastes noticeably better."
+    },
+    {
+      "key": "m2",
+      "type": "note",
+      "title": "Grinding the valve seats",
+      "tags": ["cars"],
+      "text": "Old engine project. Grinding the valve seats by hand takes an evening."
+    },
+    {
+      "key": "m3",
+      "type": "note",
+      "title": "Brake pads for the car",
+      "tags": ["cars"],
+      "text": "Ordered ceramic pads, less dust on the wheels."
+    },
+    {
+      "key": "m4",
+      "type": "note",
+      "title": "Backup for the vault",
+      "tags": ["backup"],
+      "text": "A nightly copy to the external drive plus one offsite snapshot."
+    },
+    {
+      "key": "m5",
+      "type": "note",
+      "title": "Bitter greens salad",
+      "tags": ["food", "recipes"],
+      "text": "Radicchio and chicory with a sweet dressing to balance the bitterness."
+    },
+    {
+      "key": "m6",
+      "type": "note",
+      "title": "Hard water in the kettle",
+      "tags": ["home"],
+      "text": "Descaled the kettle again. Limescale builds up within a month here."
+    }
+  ],
+  "queries": [
+    {
+      "query": "espresso extraction bitter",
+      "relevant": ["c1", "c5"],
+      "note": "Three words that never occur together as a phrase."
+    },
+    {
+      "query": "grinder cleaning",
+      "relevant": ["c2"],
+      "note": "The car entry about grinding valve seats is the distractor."
+    },
+    {
+      "query": "coffee water hardness",
+      "relevant": ["c3"],
+      "note": "Two unrelated entries also mention hard water."
+    },
+    {
+      "query": "sourdough open crumb hydration",
+      "relevant": ["b2"],
+      "note": "Four terms, two of which are on other sourdough entries."
+    },
+    {
+      "query": "flat loaves oven",
+      "relevant": ["b3"],
+      "note": ""
+    },
+    {
+      "query": "starter feeding schedule",
+      "relevant": ["b1"],
+      "note": "Only 'starter' is literally present."
+    },
+    {
+      "query": "chain wear replacement",
+      "relevant": ["y1"],
+      "note": ""
+    },
+    {
+      "query": "brake bleed spongy lever",
+      "relevant": ["y2"],
+      "note": "The car brake-pad entry shares the strongest single word."
+    },
+    {
+      "query": "bearing grease service",
+      "relevant": ["y4"],
+      "note": ""
+    },
+    {
+      "query": "slow test suite",
+      "relevant": ["p1"],
+      "note": "A second testing entry is the distractor."
+    },
+    {
+      "query": "no dependencies standard library",
+      "relevant": ["p2"],
+      "note": ""
+    },
+    {
+      "query": "profiling before optimising",
+      "relevant": ["p5"],
+      "note": "Present as a title, so the substring path can also find it."
+    },
+    {
+      "query": "ramen berlin",
+      "relevant": ["l1"],
+      "note": "Term and tag, never adjacent; the substring path finds nothing."
+    },
+    {
+      "query": "caffeine sleep",
+      "relevant": ["s1"],
+      "note": ""
+    },
+    {
+      "query": "offsite backup",
+      "relevant": ["f2", "m4"],
+      "note": "Two genuinely relevant entries in different areas."
+    },
+    {
+      "query": "bitter",
+      "relevant": ["c5", "m5"],
+      "note": "One word, two topics; a third entry mentions it in passing."
+    },
+    {
+      "query": "tubeless",
+      "relevant": ["y3"],
+      "note": "One rare word; both modes should find it."
+    },
+    {
+      "query": "hydrat",
+      "relevant": ["b2"],
+      "note": "A prefix of a word. The substring path wins; BM25 cannot match it."
+    },
+    {
+      "query": "noodle",
+      "relevant": ["l4"],
+      "note": "Singular of a plural in the text. The substring path wins; BM25 has no stemmer."
+    },
+    {
+      "query": "neck pain monitor height",
+      "relevant": ["s3"],
+      "note": "A second entry is about a different kind of pain."
+    }
+  ]
+}

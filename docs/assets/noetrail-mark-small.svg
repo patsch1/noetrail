@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="20" height="20" role="img" aria-label="noetrail">
+  <title>noetrail</title>
+  <g fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 78 L22 22 L78 78 L78 22"/>
+    <circle cx="22" cy="78" r="13" fill="currentColor" stroke="none"/>
+    <circle cx="22" cy="22" r="13" fill="currentColor" stroke="none"/>
+    <circle cx="78" cy="78" r="13" fill="currentColor" stroke="none"/>
+    <circle cx="78" cy="22" r="13"/>
+  </g>
+</svg>

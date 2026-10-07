@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage bookmarks"
+  short_description: "Save bookmarks and search reading lists"
+  default_prompt: "Use $save-bookmark to save, classify, find, or update web bookmarks in my knowledge vault."

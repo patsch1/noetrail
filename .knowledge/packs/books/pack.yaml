@@ -1,0 +1,32 @@
+format_version: 1
+id: "books"
+version: 1
+title: "Books example"
+description: "A synthetic bundled example for tracking books and reading plans."
+types:
+  book:
+    title: "Book"
+    description: "A book the user reads, has read, or wants to read."
+    template: "book.md"
+    body_sections: ["Notes", "Quotes", "Personal review"]
+    fields:
+      author:
+        type: "string"
+        required: true
+        searchable: true
+        max_length: 500
+      reading_state:
+        type: "enum"
+        values: ["wishlist", "reading", "read", "abandoned"]
+        default: "wishlist"
+        searchable: true
+      pages:
+        type: "integer"
+        minimum: 1
+      source_url:
+        type: "url"
+      topics:
+        type: "array"
+        items: "string"
+        max_items: 20
+        searchable: true

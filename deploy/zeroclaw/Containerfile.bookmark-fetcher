@@ -1,0 +1,23 @@
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONUTF8=1
+
+ENV PYTHONPATH=/app
+
+WORKDIR /app
+# Only the fetcher module is copied. The image deliberately contains no vault
+# code, no CLI, and no schema resources.
+COPY src/noetrail/__init__.py src/noetrail/version.py /app/noetrail/
+# jsonrpc.py and mcp_protocol.py are dependency-free protocol helpers shared
+# with the vault server. They import no vault code.
+COPY src/noetrail/jsonrpc.py /app/noetrail/jsonrpc.py
+COPY src/noetrail/mcp_protocol.py /app/noetrail/mcp_protocol.py
+COPY src/noetrail/bookmark_fetcher.py /app/noetrail/bookmark_fetcher.py
+
+USER 65532:65532
+EXPOSE 8080
+
+ENTRYPOINT ["python3", "-m", "noetrail.bookmark_fetcher"]
+CMD ["--transport", "http", "--listen", "0.0.0.0", "--port", "8080", "--timeout-seconds", "15", "--max-response-bytes", "500000", "--auth-token-env", "BOOKMARK_FETCH_TOKEN"]

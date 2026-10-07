@@ -1,0 +1,33 @@
+# Review ownership. Noetrail has one maintainer, so a single catch-all rule
+# would be enough; the paths below are listed separately because they are the
+# ones where an unreviewed change is expensive, and because this file should
+# still say something useful when there is more than one owner.
+#
+# CODEOWNERS only requests reviews. Requiring them is a branch-protection
+# setting on `main`, which is configured in the repository settings, not here.
+
+*                                   @patsch1
+
+# On-disk format, migrations, and the code that decides what a path may be.
+/src/noetrail/migrations.py         @patsch1
+/src/noetrail/layout.py             @patsch1
+/src/noetrail/schema.py             @patsch1
+/.knowledge/                        @patsch1
+
+# Agent-facing boundaries: the MCP surface and the isolated fetcher.
+/src/noetrail/mcp.py                @patsch1
+/src/noetrail/mcp_protocol.py       @patsch1
+/src/noetrail/bookmark_fetcher.py   @patsch1
+
+# Supply chain and publication: workflows, packaging metadata, and the
+# scripts a release is checked with.
+/.github/                           @patsch1
+/pyproject.toml                     @patsch1
+/MANIFEST.in                        @patsch1
+/tools/                             @patsch1
+
+# Governance and security promises.
+/SECURITY.md                        @patsch1
+/CODE_OF_CONDUCT.md                 @patsch1
+/CONTRIBUTING.md                    @patsch1
+/LICENSE                            @patsch1

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fetch bookmark metadata"
+  short_description: "Extract safe metadata from web pages"
+  default_prompt: "Use $fetch-bookmark-metadata to retrieve neutral metadata for this URL."

@@ -1,0 +1,40 @@
+{
+  "name": "word-form-transfer-diagnostics",
+  "about": "Synthetic transfer cases authored after fixing the fallback rules, without retuning them. Not an independent benchmark. Includes unsupported forms and absent compound distractors.",
+  "entries": [
+    {"key": "garden", "title": "Gartenarbeiten", "text": "Handschuh reinigen."},
+    {"key": "tools", "title": "Werkzeugpflege", "text": "Koffer trocken lagern."},
+    {"key": "winter", "title": "Winterreise", "text": "Mantel einpacken."},
+    {"key": "bag", "title": "Taschenpflege", "text": "Lampe austauschen."},
+    {"key": "ticket", "title": "Einlass", "text": "Ticket vorzeigen."},
+    {"key": "glove", "title": "Equipment", "text": "Glove cleaning instructions."},
+    {"key": "sensor", "title": "Messung", "text": "Sensor trocken halten."},
+    {"key": "chair", "title": "Furniture", "text": "Chair maintenance."},
+    {"key": "tree", "title": "Obstpflege", "text": "Baum schneiden."},
+    {"key": "book", "title": "Bibliothek", "text": "Buch ausleihen."},
+    {"key": "run", "title": "Sport", "text": "Run daily."},
+    {"key": "boat", "title": "Segeltraining", "text": "Tuch trocknen."}
+  ],
+  "queries": [
+    {"query": "Gartenhandschuh", "category": "compound", "relevant": ["garden"]},
+    {"query": "Werkzeugkoffer", "category": "compound", "relevant": ["tools"]},
+    {"query": "Wintermantel", "category": "compound", "relevant": ["winter"]},
+    {"query": "Taschenlampe", "category": "compound", "relevant": ["bag"]},
+    {"query": "Tickets", "category": "ending", "relevant": ["ticket"]},
+    {"query": "Gloves", "category": "ending", "relevant": ["glove"]},
+    {"query": "Sensoren", "category": "ending", "relevant": ["sensor"]},
+    {"query": "Chairs", "category": "ending", "relevant": ["chair"]},
+    {"query": "Bäume", "category": "unsupported", "relevant": ["tree"]},
+    {"query": "Bücher", "category": "unsupported", "relevant": ["book"]},
+    {"query": "Running", "category": "unsupported", "relevant": ["run"]},
+    {"query": "Segeltuch", "category": "unsupported", "relevant": ["boat"]},
+    {"query": "Lederhandschuh", "category": "absent", "relevant": []},
+    {"query": "Reisekoffer", "category": "absent", "relevant": []},
+    {"query": "Sommermantel", "category": "absent", "relevant": []},
+    {"query": "Deckenlampe", "category": "absent", "relevant": []},
+    {"query": "Ticketautomat", "category": "absent", "relevant": []},
+    {"query": "Sensorkabel", "category": "absent", "relevant": []},
+    {"query": "Gardens", "category": "absent", "relevant": []},
+    {"query": "Chairperson", "category": "absent", "relevant": []}
+  ]
+}

@@ -1,0 +1,58 @@
+# Which files the source distribution carries.
+#
+# setuptools' implicit sdist file list only picks up `tests/test*.py`, so
+# `tests/__init__.py` was silently dropped -- and that module is what puts
+# `src/` on `sys.path` for the test process and every CLI or MCP subprocess it
+# starts. Without it, `python -m unittest discover -s tests -t .` fails on an
+# unpacked sdist with "Start directory is not importable" even though all
+# sixteen test modules are present.
+#
+# Whole directories are grafted rather than enumerated by extension, because
+# the failure mode being fixed here is a forgotten file. What must not ship is
+# listed explicitly at the bottom instead.
+
+include Makefile
+include MANIFEST.in
+include AGENTS.md
+include CHANGELOG.md
+include CODE_OF_CONDUCT.md
+include CONTRIBUTING.md
+include ROADMAP.md
+include SECURITY.md
+include SUPPORT.md
+include LICENSE
+include README.md
+include .gitignore
+
+# The full suite, not just the modules setuptools discovers by name.
+graft tests
+
+# Maintainer scripts and the compatibility shims tests and the Makefile call.
+graft tools
+
+graft docs
+graft skills
+graft demo
+graft deploy
+
+# Built-in schemas, templates, and packs; also shipped as installed data files.
+graft .knowledge
+
+# Workflows, Dependabot, and CodeQL: tests read them, and a packager rebuilding
+# the release should be able to see how it was built.
+graft .github
+
+# Private runtime data, caches, and build residue never belong in a
+# distribution. These stay listed even while they match nothing -- that is the
+# point of a guard.
+prune vault
+prune trash
+prune imports
+prune build
+prune dist
+prune .venv
+prune .knowledge/index
+prune .knowledge/cache
+global-exclude *.py[cod]
+global-exclude *.lock
+global-exclude .DS_Store

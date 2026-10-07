@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/knowledge/entry.schema.json",
+  "title": "Knowledge entry core envelope",
+  "description": "Schema 12 core fields. The active registry supplies the type-specific attributes schema.",
+  "type": "object",
+  "required": [
+    "id",
+    "schema_version",
+    "type",
+    "type_version",
+    "attributes",
+    "title",
+    "created_at",
+    "updated_at",
+    "status",
+    "sensitivity",
+    "tags",
+    "relations"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^kn_[0-9a-f]{32}$"
+    },
+    "schema_version": {
+      "const": 12
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "thought",
+            "memory",
+            "note",
+            "person",
+            "project",
+            "media",
+            "source",
+            "place",
+            "product",
+            "recipe",
+            "experience",
+            "bookmark"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "maxLength": 127
+        }
+      ]
+    },
+    "type_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "attributes": {
+      "type": "object"
+    },
+    "provenance": {
+      "description": "Where each stored field's value came from. Absent means nothing was recorded, not that the value is trusted.",
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,62}$"
+      },
+      "additionalProperties": {
+        "enum": [
+          "web",
+          "user",
+          "agent"
+        ]
+      }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "uniqueItems": true
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "unreviewed",
+        "archived",
+        "trashed"
+      ]
+    },
+    "previous_status": {
+      "enum": [
+        "active",
+        "unreviewed",
+        "archived"
+      ]
+    },
+    "deleted_at": {
+      "type": "string"
+    },
+    "deleted_from": {
+      "type": "string",
+      "pattern": "^vault/"
+    },
+    "purge_after": {
+      "type": "string"
+    },
+    "deletion_reason": {
+      "type": "string"
+    },
+    "sensitivity": {
+      "enum": [
+        "normal",
+        "personal",
+        "sensitive"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "predicate",
+          "target"
+        ],
+        "properties": {
+          "predicate": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^kn_[0-9a-f]{32}$"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "superseded_by": {
+            "type": "string",
+            "pattern": "^kn_[0-9a-f]{32}$"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unresolved_relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "predicate",
+          "reference"
+        ],
+        "properties": {
+          "predicate": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "reviewed_at": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object"
+    },
+    "attachments": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "media_type",
+          "sha256",
+          "size_bytes",
+          "original_name",
+          "added_at",
+          "origin"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ka_[0-9a-f]{32}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^vault/attachments/[0-9a-f]{2}/[0-9a-f]{64}\\.(jpg|png|webp|gif|heic|avif)$"
+          },
+          "media_type": {
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/gif",
+              "image/heic",
+              "image/avif"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20971520
+          },
+          "original_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "added_at": {
+            "type": "string"
+          },
+          "origin": {
+            "const": "attachment_inbox"
+          },
+          "caption": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "experienced_at": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "trashed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "previous_status",
+          "deleted_at",
+          "deleted_from",
+          "purge_after"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  # The workflows pin actions to a commit SHA, which is safe but frozen:
+  # without this, a pinned action would keep running its original code
+  # indefinitely, security fixes included. Dependabot rewrites the SHA and the
+  # trailing version comment together.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+# There is deliberately no "pip" entry: the runtime has no third-party
+# dependencies, and the two CI-only tools are pinned in the workflows.

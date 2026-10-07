@@ -1,0 +1,25 @@
+version: 11
+current_schema_version: 12
+vault_directory: "vault"
+default_capture_type: "thought"
+default_sensitivity: "personal"
+id_prefix: "kn_"
+statuses:
+  - "active"
+  - "unreviewed"
+  - "archived"
+  - "trashed"
+sensitivities:
+  - "normal"
+  - "personal"
+  - "sensitive"
+# Section headings written into entry bodies. Override them in the instance
+# configuration root to keep an existing vault in its original language.
+body_headings:
+  link: "Link"
+  personal_note: "Personal note"
+  generated_summary: "Generated summary"
+  personal_rating: "Personal rating"
+  ingredients: "Ingredients"
+  preparation: "Preparation"
+  personal_notes: "Personal notes"

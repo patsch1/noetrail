@@ -1,0 +1,828 @@
+{
+  "name": "Synthetic everyday questions v1",
+  "about": [
+    "Locally authored diagnostic set, NOT an external or independent benchmark.",
+    "Judgements are not constrained to lexical reachability. Empty relevance lists mean no answer is recorded.",
+    "Question categories are reported separately; no ranking was tuned to these labels."
+  ],
+  "entries": [
+    {
+      "key": "bike",
+      "title": "Fahrradwartung",
+      "text": "Die Kette am Stadtrad wird nach Regen getrocknet und geölt."
+    },
+    {
+      "key": "bread",
+      "title": "Sauerteigbrot",
+      "text": "Den Teig über Nacht im Kühlschrank gehen lassen und morgens backen."
+    },
+    {
+      "key": "coffee",
+      "title": "Espresso",
+      "text": "Bittere Tassen wurden mit gröberem Mahlgrad ausgewogener."
+    },
+    {
+      "key": "train",
+      "title": "Nachtzugreise",
+      "text": "Im Liegewagen lagen Ohrstöpsel neben dem Reisepass."
+    },
+    {
+      "key": "garden",
+      "title": "Balkonbewässerung",
+      "text": "Tomaten morgens direkt an den Wurzeln gießen."
+    },
+    {
+      "key": "book",
+      "title": "Leseliste",
+      "text": "Der synthetische Roman Mondarchiv steht auf der Wunschliste."
+    },
+    {
+      "key": "soup",
+      "title": "Linsensuppe",
+      "text": "Rote Linsen mit Karotten, Kreuzkümmel und Gemüsebrühe kochen."
+    },
+    {
+      "key": "hike",
+      "title": "Wanderrucksack",
+      "text": "Für die Tagestour Regenjacke, Wasser und eine Karte einpacken."
+    },
+    {
+      "key": "camera",
+      "title": "Langzeitbelichtung",
+      "text": "Die Kamera auf ein Stativ setzen und den Selbstauslöser nutzen."
+    },
+    {
+      "key": "music",
+      "title": "Klavierübung",
+      "text": "Die linke Hand langsam üben, danach beide Hände zusammenspielen."
+    },
+    {
+      "key": "backup",
+      "title": "Datensicherung",
+      "text": "Jeden Sonntag eine verschlüsselte Kopie auf eine externe Festplatte schreiben."
+    },
+    {
+      "key": "run",
+      "title": "Lauftraining",
+      "text": "Die lockere Runde beginnt am Kanal und endet beim alten Steg."
+    },
+    {
+      "key": "gift",
+      "title": "Geschenkidee",
+      "text": "Ein Keramikkurs wäre ein schönes Geburtstagsgeschenk."
+    },
+    {
+      "key": "repair",
+      "title": "Reißverschluss",
+      "text": "Den klemmenden Schieber mit wenig Graphit vorsichtig bewegen."
+    },
+    {
+      "key": "meeting",
+      "title": "Besprechungsnotiz",
+      "text": "Im Projekt Morgenstern wurde ein kleiner Prototyp als nächster Schritt vereinbart."
+    },
+    {
+      "key": "recipe",
+      "title": "Pfannkuchen",
+      "text": "Mehl, Hafermilch und etwas Salz verrühren und portionsweise ausbacken."
+    },
+    {
+      "key": "place",
+      "title": "Café Kiesel",
+      "text": "Im synthetischen Café Kiesel gibt es einen ruhigen Innenhof."
+    },
+    {
+      "key": "alias",
+      "title": "Forschungsstation Nordlicht",
+      "text": "Die Station trägt in den synthetischen Unterlagen auch den Namen Northern Lights Research Station.",
+      "aliases": [
+        "Northern Lights Research Station"
+      ]
+    },
+    {
+      "key": "observatory",
+      "type": "project",
+      "title": "Sternwarte",
+      "text": "Ein synthetisches Projekt."
+    },
+    {
+      "key": "robot",
+      "type": "project",
+      "title": "Roboterlabor",
+      "text": "Ein anderes synthetisches Projekt."
+    },
+    {
+      "key": "researcher",
+      "type": "person",
+      "title": "Person Beispiel",
+      "text": "Eine synthetische Person für zeitliche Abfragen."
+    }
+  ],
+  "relations": [
+    {
+      "source": "researcher",
+      "target": "observatory",
+      "predicate": "involves",
+      "valid_from": "2024-01-01T00:00:00+00:00",
+      "valid_until": "2025-01-01T00:00:00+00:00"
+    },
+    {
+      "source": "researcher",
+      "target": "robot",
+      "predicate": "involves",
+      "valid_from": "2025-01-01T00:00:00+00:00"
+    }
+  ],
+  "queries": [
+    {
+      "category": "literal",
+      "query": "Fahrradwartung",
+      "relevant": [
+        "bike"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Wie pflege ich meine Fahrradkette?",
+      "relevant": [
+        "bike"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "bike chain care",
+      "relevant": [
+        "bike"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Fahrradwartnug",
+      "relevant": [
+        "bike"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Sauerteigbrot",
+      "relevant": [
+        "bread"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "kalte Teigführung",
+      "relevant": [
+        "bread"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "overnight sourdough",
+      "relevant": [
+        "bread"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Sauerteigbort",
+      "relevant": [
+        "bread"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Espresso",
+      "relevant": [
+        "coffee"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Kaffee schmeckt bitter",
+      "relevant": [
+        "coffee"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "bitter coffee adjustment",
+      "relevant": [
+        "coffee"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Espreso",
+      "relevant": [
+        "coffee"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Nachtzugreise",
+      "relevant": [
+        "train"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Zugreise schlafen",
+      "relevant": [
+        "train"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "sleeper train packing",
+      "relevant": [
+        "train"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Nachtzugresie",
+      "relevant": [
+        "train"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Balkonbewässerung",
+      "relevant": [
+        "garden"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Pflanzen auf dem Balkon wässern",
+      "relevant": [
+        "garden"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "watering balcony tomatoes",
+      "relevant": [
+        "garden"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Balkonbewässerng",
+      "relevant": [
+        "garden"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Mondarchiv",
+      "relevant": [
+        "book"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Welches Buch wollte ich lesen?",
+      "relevant": [
+        "book"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "novel reading wishlist",
+      "relevant": [
+        "book"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Mondarchvi",
+      "relevant": [
+        "book"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Linsensuppe",
+      "relevant": [
+        "soup"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Eintopf aus Hülsenfrüchten",
+      "relevant": [
+        "soup"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "red lentil soup",
+      "relevant": [
+        "soup"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Linsensupe",
+      "relevant": [
+        "soup"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Wanderrucksack",
+      "relevant": [
+        "hike"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Ausrüstung für eine Wanderung",
+      "relevant": [
+        "hike"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "day hike packing",
+      "relevant": [
+        "hike"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Wanderrucksak",
+      "relevant": [
+        "hike"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Langzeitbelichtung",
+      "relevant": [
+        "camera"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "verwacklungsfreie Nachtfotos",
+      "relevant": [
+        "camera"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "long exposure tripod",
+      "relevant": [
+        "camera"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Langzeitbelichtng",
+      "relevant": [
+        "camera"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Klavierübung",
+      "relevant": [
+        "music"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Piano lernen",
+      "relevant": [
+        "music"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "piano left hand practice",
+      "relevant": [
+        "music"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Klavierübng",
+      "relevant": [
+        "music"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Datensicherung",
+      "relevant": [
+        "backup"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Backup Rhythmus",
+      "relevant": [
+        "backup"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "weekly encrypted backup",
+      "relevant": [
+        "backup"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Datensicherng",
+      "relevant": [
+        "backup"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Lauftraining",
+      "relevant": [
+        "run"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Joggingstrecke",
+      "relevant": [
+        "run"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "easy running route",
+      "relevant": [
+        "run"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Lauftrainng",
+      "relevant": [
+        "run"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Geschenkidee",
+      "relevant": [
+        "gift"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Töpfern verschenken",
+      "relevant": [
+        "gift"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "birthday pottery workshop",
+      "relevant": [
+        "gift"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Geschenkdidee",
+      "relevant": [
+        "gift"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Reißverschluss",
+      "relevant": [
+        "repair"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Jacke lässt sich nicht schließen",
+      "relevant": [
+        "repair"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "stuck zipper repair",
+      "relevant": [
+        "repair"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Reißverschlus",
+      "relevant": [
+        "repair"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Morgenstern",
+      "relevant": [
+        "meeting"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Was war der nächste Projektschritt?",
+      "relevant": [
+        "meeting"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "project prototype decision",
+      "relevant": [
+        "meeting"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Morgenstren",
+      "relevant": [
+        "meeting"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Pfannkuchen",
+      "relevant": [
+        "recipe"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Eierkuchen ohne Ei",
+      "relevant": [
+        "recipe"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "vegan pancake batter",
+      "relevant": [
+        "recipe"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Pfannkuhcen",
+      "relevant": [
+        "recipe"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Café Kiesel",
+      "relevant": [
+        "place"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "ruhiger Ort zum Kaffeetrinken",
+      "relevant": [
+        "place"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "quiet cafe courtyard",
+      "relevant": [
+        "place"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Café Kisel",
+      "relevant": [
+        "place"
+      ]
+    },
+    {
+      "category": "literal",
+      "query": "Forschungsstation Nordlicht",
+      "relevant": [
+        "alias"
+      ]
+    },
+    {
+      "category": "paraphrase_de",
+      "query": "Northern Lights Research Station",
+      "relevant": [
+        "alias"
+      ]
+    },
+    {
+      "category": "cross_language",
+      "query": "Nordlicht Forschungsstation",
+      "relevant": [
+        "alias"
+      ]
+    },
+    {
+      "category": "typo",
+      "query": "Forschungsstatoin Nordlicht",
+      "relevant": [
+        "alias"
+      ]
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "observatory",
+        "relation_predicate": "involves",
+        "as_of": "2023-06-01T00:00:00+00:00"
+      },
+      "relevant": []
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "robot",
+        "relation_predicate": "involves",
+        "as_of": "2023-06-01T00:00:00+00:00"
+      },
+      "relevant": []
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "observatory",
+        "relation_predicate": "involves",
+        "as_of": "2024-06-01T00:00:00+00:00"
+      },
+      "relevant": [
+        "researcher"
+      ]
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "robot",
+        "relation_predicate": "involves",
+        "as_of": "2024-06-01T00:00:00+00:00"
+      },
+      "relevant": []
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "observatory",
+        "relation_predicate": "involves",
+        "as_of": "2025-06-01T00:00:00+00:00"
+      },
+      "relevant": []
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "robot",
+        "relation_predicate": "involves",
+        "as_of": "2025-06-01T00:00:00+00:00"
+      },
+      "relevant": [
+        "researcher"
+      ]
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "observatory",
+        "relation_predicate": "involves",
+        "as_of": "2026-06-01T00:00:00+00:00"
+      },
+      "relevant": []
+    },
+    {
+      "category": "temporal",
+      "query": "",
+      "filters": {
+        "related_id": "robot",
+        "relation_predicate": "involves",
+        "as_of": "2026-06-01T00:00:00+00:00"
+      },
+      "relevant": [
+        "researcher"
+      ]
+    },
+    {
+      "category": "unanswerable",
+      "query": "☕",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "!!!",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Marskolonie",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Quantencomputer",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Walbeobachtung",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Orchideen",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Gletscherhöhle",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Segelschein",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Tauchflasche",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Vulkanasche",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Porzellanmalerei",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Zirkuszelt",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Teleskopspiegel",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Bernsteinkette",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Papageientaucher",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Mikroskopobjektiv",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Silberschmuck",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Unterwasserroboter",
+      "relevant": []
+    },
+    {
+      "category": "unanswerable",
+      "query": "Wie lautet die Seriennummer der Espressomaschine?",
+      "relevant": []
+    }
+  ]
+}

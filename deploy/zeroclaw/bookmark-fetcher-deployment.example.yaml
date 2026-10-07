@@ -1,0 +1,77 @@
+# Build from the repository root, for example:
+#   docker build -f deploy/zeroclaw/Containerfile.bookmark-fetcher .
+#
+# Replace namespace, image and Secret name before applying.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookmark-fetcher
+  namespace: REPLACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: zeroclaw-bookmark-fetcher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: zeroclaw-bookmark-fetcher
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bookmark-fetcher
+          image: REPLACE
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BOOKMARK_FETCH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: bookmark-fetcher-auth
+                  key: token
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bookmark-fetcher
+  namespace: REPLACE
+spec:
+  selector:
+    app.kubernetes.io/name: zeroclaw-bookmark-fetcher
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

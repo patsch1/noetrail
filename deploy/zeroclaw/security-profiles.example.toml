@@ -1,0 +1,250 @@
+# Merge these security sections into the live ~/.zeroclaw/config.toml.
+# This is intentionally not a complete provider or channel configuration.
+#
+# Install the selected skills at:
+#   <zeroclaw-install>/shared/skills/knowledge-vault/
+# Mount this repository's .knowledge/ and tools/ read-only at /srv/noetrail,
+# and mount vault/ and trash/ read-write at the same root.
+#
+# Add these references to the existing ZeroClaw agent:
+#   risk_profile = "knowledge_vault"
+#   skill_bundles = ["knowledge_vault"]
+#   mcp_bundles = ["knowledge_vault"]
+#   delegate_same_risk_profile = false
+#   delegates = [{ agent = "bookmark_fetcher", mode = "independent" }]
+#   acp_enable_mcp = true  # only when this agent is driven over ACP
+#
+# Create a second agent alias named `bookmark_fetcher` with no channels and:
+#   risk_profile = "bookmark_fetcher"
+#   skill_bundles = ["bookmark_fetcher"]
+#   mcp_bundles = ["bookmark_fetcher"]
+# It must not receive the knowledge bundle or any PVC mount.
+
+[mcp]
+enabled = true
+deferred_loading = false
+
+[[mcp.servers]]
+name = "knowledge"
+transport = "stdio"
+# Current ZeroClaw stdio MCP children inherit the daemon environment. Starting
+# through `env -i` prevents provider and channel secrets reaching the Python
+# process. Ensure this exact path exists in the deployment image.
+command = "/usr/bin/env"
+args = [
+  "-i",
+  "PATH=/usr/local/bin:/usr/bin:/bin",
+  "LANG=C.UTF-8",
+  "LC_ALL=C.UTF-8",
+  "PYTHONIOENCODING=utf-8",
+  "PYTHONUNBUFFERED=1",
+  "PYTHONUTF8=1",
+  "PYTHONPATH=/srv/noetrail/src",
+  "python3",
+  "-m",
+  "noetrail.mcp",
+  "--data-root",
+  "/srv/noetrail-data",
+  "--config-root",
+  "/etc/noetrail",
+  "--builtins-root",
+  "/srv/noetrail/.knowledge",
+]
+tool_timeout_secs = 30
+
+[[mcp.servers]]
+name = "bookmark_fetch"
+transport = "http"
+url = "http://bookmark-fetcher:8080/mcp"
+# Set the Authorization bearer header only in the live encrypted ZeroClaw
+# config. Its value comes from the same external secret that the fetcher pod
+# receives as BOOKMARK_FETCH_TOKEN; never place that value in this repository.
+tool_timeout_secs = 20
+
+[mcp_bundles.knowledge_vault]
+servers = ["knowledge"]
+exclude = []
+
+[mcp_bundles.bookmark_fetcher]
+servers = ["bookmark_fetch"]
+exclude = []
+
+[skill_bundles.knowledge_vault]
+include = [
+  "capture-knowledge",
+  "manage-trash",
+  "review-knowledge",
+  "save-bookmark",
+]
+exclude = ["import-knowledge"]
+
+[skill_bundles.bookmark_fetcher]
+include = ["fetch-bookmark-metadata"]
+exclude = [
+  "capture-knowledge",
+  "import-knowledge",
+  "manage-trash",
+  "review-knowledge",
+  "save-bookmark",
+]
+
+[risk_profiles.knowledge_vault]
+level = "supervised"
+workspace_only = true
+allowed_roots = []
+allowed_commands = []
+allowed_tools = [
+  "tool_search",
+  "read_skill",
+  "delegate",
+]
+auto_approve = [
+  "tool_search",
+  "read_skill",
+  "delegate",
+  "knowledge__inventory",
+  "knowledge__search",
+  "knowledge__retrieve",
+  "knowledge__list_views",
+  "knowledge__run_view",
+  "knowledge__get_entry",
+  "knowledge__list_pending_attachments",
+  "knowledge__review_queue",
+  "knowledge__relations",
+  "knowledge__list_trash",
+  "knowledge__validate",
+]
+always_ask = [
+  "knowledge__capture",
+  "knowledge__save_bookmark",
+  "knowledge__save_recipe",
+  "knowledge__update",
+  "knowledge__add_attachment",
+  "knowledge__set_relation",
+  "knowledge__set_unresolved_relation",
+  "knowledge__set_tags",
+  "knowledge__set_status",
+  "knowledge__complete_review",
+  "knowledge__trash",
+  "knowledge__restore",
+]
+excluded_tools = [
+  "shell",
+  "file_read",
+  "file_write",
+  "file_edit",
+  "glob_search",
+  "content_search",
+  "http_request",
+  "web_fetch",
+  "web_search_tool",
+  "browser",
+  "browser_open",
+  "memory_store",
+  "memory_forget",
+  "memory_purge",
+  "spawn_subagent",
+  "schedule",
+  "cron_add",
+  "cron_update",
+  "cron_remove",
+]
+block_high_risk_commands = true
+require_approval_for_medium_risk = true
+sandbox_enabled = true
+sandbox_backend = "auto"
+shell_env_passthrough = []
+
+[risk_profiles.knowledge_vault.delegation_policy]
+mode = "allow"
+
+[risk_profiles.bookmark_fetcher]
+level = "readonly"
+workspace_only = true
+allowed_roots = []
+allowed_commands = []
+allowed_tools = [
+  "tool_search",
+  "read_skill",
+  "bookmark_fetch__fetch",
+]
+auto_approve = [
+  "tool_search",
+  "read_skill",
+  "bookmark_fetch__fetch",
+]
+always_ask = []
+excluded_tools = [
+  "shell",
+  "file_read",
+  "file_write",
+  "file_edit",
+  "glob_search",
+  "content_search",
+  "http_request",
+  "web_search_tool",
+  "web_fetch",
+  "browser",
+  "browser_open",
+  "memory_recall",
+  "memory_store",
+  "memory_forget",
+  "memory_purge",
+  "delegate",
+  "spawn_subagent",
+  "schedule",
+  "cron_add",
+  "cron_update",
+  "cron_remove",
+]
+block_high_risk_commands = true
+require_approval_for_medium_risk = true
+sandbox_enabled = true
+sandbox_backend = "auto"
+shell_env_passthrough = []
+
+[link_enricher]
+# Global inbound enrichment would place web-derived text directly into the
+# knowledge agent's prompt, bypassing the isolated fetcher boundary.
+enabled = false
+max_links = 1
+timeout_secs = 10
+
+[web_fetch]
+enabled = false
+allowed_domains = []
+allowed_private_hosts = []
+blocked_domains = []
+max_response_size = 500000
+timeout_secs = 30
+
+[web_search]
+enabled = false
+
+[http_request]
+enabled = false
+allowed_domains = []
+allowed_private_hosts = []
+allow_private_hosts = false
+
+[browser]
+enabled = false
+allowed_domains = []
+allowed_private_hosts = []
+
+[skills]
+allow_scripts = false
+open_skills_enabled = false
+
+[secrets]
+encrypt = true
+
+[security.audit]
+enabled = true
+sign_events = true
+max_size_mb = 100
+
+[security.leak_detection]
+enabled = true
+high_entropy_tokens = true
+sensitivity = 0.7

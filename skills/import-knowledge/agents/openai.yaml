@@ -1,0 +1,4 @@
+interface:
+  display_name: "Import knowledge"
+  short_description: "Take over Markdown and note exports"
+  default_prompt: "Use $import-knowledge to preview and safely import these Markdown files or exported notes into my Noetrail vault."

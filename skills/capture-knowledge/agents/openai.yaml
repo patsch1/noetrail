@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture knowledge and experiences"
+  short_description: "Notes, recipes, photos, and experiences"
+  default_prompt: "Use $capture-knowledge to save or find this note, recipe link or text, photo, place, product, plan, tasting, cooking event, visit, or personal experience in my knowledge vault."

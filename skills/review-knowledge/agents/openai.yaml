@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review knowledge"
+  short_description: "Work through pending entries together"
+  default_prompt: "Use $review-knowledge to review and resolve my knowledge-vault inbox."

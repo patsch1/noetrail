@@ -1,0 +1,230 @@
+format_version: 1
+id: "knowledge-core"
+version: 1
+title: "Knowledge core types"
+description: "Bundled registry definitions for the trusted built-in entry types."
+types:
+  thought:
+    entry_type: "thought"
+    title: "Thought"
+    description: "A brief idea, observation, opinion, or question."
+  memory:
+    entry_type: "memory"
+    title: "Memory"
+    description: "A personal recollection with deliberately preserved uncertainty."
+    fields:
+      occurred_at:
+        type: "string"
+        max_length: 100
+      occurred_precision:
+        type: "enum"
+        values: ["unknown", "year", "month", "day", "datetime", "approximate"]
+        requires:
+          occurred_at: null
+  note:
+    entry_type: "note"
+    title: "Note"
+    description: "A longer or already organized personal note."
+  person:
+    entry_type: "person"
+    title: "Person"
+    description: "A person represented as a reusable knowledge entity."
+  project:
+    entry_type: "project"
+    title: "Project"
+    description: "A project represented as a reusable knowledge entity."
+  media:
+    entry_type: "media"
+    title: "Media"
+    description: "A film, series, book, album, or other media entity."
+  source:
+    entry_type: "source"
+    title: "Source"
+    description: "A reusable source that is not stored as a web bookmark."
+  place:
+    entry_type: "place"
+    title: "Place"
+    description: "A physical venue such as a bar, restaurant, cafe, or shop."
+    fields:
+      place_kind:
+        type: "enum"
+        values: ["bar", "restaurant", "cafe", "shop", "other"]
+        required: true
+        searchable: true
+      interest_status:
+        type: "enum"
+        values: ["none", "wishlist", "planned"]
+        default: "none"
+        required: true
+        searchable: true
+      last_experienced_at:
+        type: "datetime"
+      rating:
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        searchable: true
+        requires:
+          last_experienced_at: null
+  product:
+    entry_type: "product"
+    title: "Product"
+    description: "A drink, food, or other product the user may try and evaluate."
+    fields:
+      product_kind:
+        type: "enum"
+        values: ["rum", "spirit", "wine", "beer", "drink", "food", "other"]
+        required: true
+        searchable: true
+      interest_status:
+        type: "enum"
+        values: ["none", "wishlist", "planned"]
+        default: "none"
+        required: true
+        searchable: true
+      last_experienced_at:
+        type: "datetime"
+      rating:
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        searchable: true
+        requires:
+          last_experienced_at: null
+  recipe:
+    entry_type: "recipe"
+    title: "Recipe"
+    description: "Reusable ingredients and instructions, optionally linked to a public source."
+    body_sections: ["Ingredients", "Instructions", "Personal notes"]
+    fields:
+      interest_status:
+        type: "enum"
+        values: ["none", "wishlist", "planned"]
+        default: "none"
+        required: true
+        searchable: true
+      source_url:
+        type: "url"
+        normalized: true
+        searchable: true
+        requires:
+          source_domain: null
+      source_domain:
+        type: "string"
+        max_length: 255
+        searchable: true
+        host_of: "source_url"
+        requires:
+          source_url: null
+      source_site_name:
+        type: "string"
+        min_length: 1
+        max_length: 500
+        searchable: true
+      source_description:
+        type: "text"
+        min_length: 1
+        max_length: 10000
+        searchable: true
+      servings:
+        type: "string"
+        min_length: 1
+        max_length: 200
+        searchable: true
+      prep_minutes:
+        type: "integer"
+        minimum: 0
+        maximum: 10080
+      cook_minutes:
+        type: "integer"
+        minimum: 0
+        maximum: 10080
+  experience:
+    entry_type: "experience"
+    title: "Experience"
+    description: "One completed tasting, visit, meal, cooking event, or media experience."
+    fields:
+      experience_kind:
+        type: "enum"
+        values: ["tasting", "visit", "dining", "watching", "listening", "reading", "cooking", "other"]
+        required: true
+        searchable: true
+      occurred_at:
+        type: "datetime"
+        required: true
+        searchable: true
+      occurred_precision:
+        type: "enum"
+        values: ["unknown", "year", "month", "day", "datetime", "approximate"]
+        default: "datetime"
+        required: true
+      rating:
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        searchable: true
+  bookmark:
+    entry_type: "bookmark"
+    title: "Bookmark"
+    description: "A saved web URL with neutral metadata and separate personal context."
+    fields:
+      url:
+        type: "url"
+        required: true
+        searchable: true
+      canonical_url:
+        type: "url"
+        required: true
+        normalized: true
+        searchable: true
+      domain:
+        type: "string"
+        required: true
+        max_length: 255
+        searchable: true
+        host_of: "canonical_url"
+      retrieved_at:
+        type: "datetime"
+        required: true
+      reading_status:
+        type: "enum"
+        values: ["unread", "reading", "read", "reference"]
+        default: "unread"
+        required: true
+        searchable: true
+      bookmark_kind:
+        type: "enum"
+        values: ["article", "video", "podcast", "tool", "product", "website", "other", "unknown"]
+        default: "unknown"
+        required: true
+        searchable: true
+      read_at:
+        type: "datetime"
+        searchable: true
+        requires:
+          reading_status: "read"
+      fetch_status:
+        type: "enum"
+        values: ["complete", "partial", "blocked", "failed", "not_attempted"]
+        default: "not_attempted"
+        required: true
+      site_name:
+        type: "string"
+        max_length: 500
+        searchable: true
+      authors:
+        type: "array"
+        items: "string"
+        max_items: 32
+        searchable: true
+      published_at:
+        type: "string"
+        max_length: 100
+      language:
+        type: "string"
+        max_length: 50
+        searchable: true
+      page_description:
+        type: "text"
+        max_length: 10000
+        searchable: true

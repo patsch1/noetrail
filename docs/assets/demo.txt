@@ -1,0 +1,72 @@
+$ export NOETRAIL_DATA_ROOT=data NOETRAIL_CONFIG_ROOT=config
+
+$ noetrail search harbor
+{
+  "scope": "active",
+  "query": "harbor",
+  "sort": "relevance",
+  "total": 1,
+  "offset": 0,
+  "limit": 20,
+  "returned": 1,
+  "has_more": false,
+  "next_offset": null,
+  "complete": true,
+  "unreadable_entry_count": 0,
+  "items": [
+    {
+      "id": "kn_22222222222222222222222222222222",
+      "type": "travel/destination",
+      "title": "Azure Harbor",
+      "status": "active",
+      "updated_at": "2026-01-01T10:05:00+00:00",
+      "sensitivity": "normal",
+      "relation_count": 0,
+      "attachment_count": 0,
+      "type_version": 1,
+      "attributes": {
+        "country": "Exampleland",
+        "highlights": [
+          "glass lighthouse",
+          "night market"
+        ],
+        "visit_state": "wishlist"
+      },
+      "revision": "sha256:77aacb58ff93616b18da00cb79dcf7b1953bdcf58296b52e326f96f4021a6b6d"
+    }
+  ]
+}
+
+$ noetrail capture --type thought --title 'Markdown beats a database here' --text 'The vault stays readable without the program.' --tag design
+{"created": "vault/inbox/2026-08-19--markdown-beats-a-database-here--c394c7ff.md", "id": "kn_c394c7ff97d84d66bd9b837455e8fc20", "title": "Markdown beats a database here", "type": "thought", "revision": "sha256:70c4e4a56f801bea7eaa73d1cc4608fc0bf515d7e0528e8c1c02da28564efb05"}
+
+$ noetrail review
+{
+  "count": 1,
+  "displayed": 1,
+  "complete": true,
+  "skipped_legacy": [],
+  "items": [
+    {
+      "id": "kn_c394c7ff97d84d66bd9b837455e8fc20",
+      "type": "thought",
+      "title": "Markdown beats a database here",
+      "path": "vault/inbox/2026-08-19--markdown-beats-a-database-here--c394c7ff.md",
+      "created_at": "2026-08-19T16:54:53.375883+02:00",
+      "updated_at": "2026-08-19T16:54:53.375883+02:00",
+      "revision": "sha256:70c4e4a56f801bea7eaa73d1cc4608fc0bf515d7e0528e8c1c02da28564efb05",
+      "sensitivity": "personal",
+      "reasons": [
+        "unreviewed"
+      ],
+      "unresolved_relations": [],
+      "attachment_count": 0,
+      "type_version": 1,
+      "attributes": {}
+    }
+  ]
+}
+
+$ noetrail validate
+Validation passed for 3 active and 0 trashed entries with 0 warning(s).
+

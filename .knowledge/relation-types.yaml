@@ -1,0 +1,18 @@
+version: 1
+relations:
+  related_to:
+    symmetric: true
+  about:
+    inverse: "described_by"
+  part_of:
+    inverse: "has_part"
+  inspired_by:
+    inverse: "inspired"
+  involves:
+    inverse: "appears_in"
+  took_place_at:
+    inverse: "setting_for"
+  created_by:
+    inverse: "created"
+  based_on:
+    inverse: "basis_for"

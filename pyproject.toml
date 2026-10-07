@@ -1,0 +1,168 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noetrail"
+version = "0.10.0a1"
+description = "Noetrail: a local-first Markdown knowledge vault with narrow AI-agent interfaces"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = []
+authors = [{ name = "Patrick Schiffler" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Text Processing :: Markup :: Markdown",
+  "Topic :: Utilities",
+]
+keywords = [
+  "ai-agents",
+  "knowledge-base",
+  "local-first",
+  "markdown",
+  "mcp",
+  "personal-knowledge-management",
+  "zeroclaw",
+]
+
+[project.urls]
+Homepage = "https://github.com/patsch1/noetrail"
+Repository = "https://github.com/patsch1/noetrail.git"
+Documentation = "https://github.com/patsch1/noetrail/tree/main/docs"
+Issues = "https://github.com/patsch1/noetrail/issues"
+Changelog = "https://github.com/patsch1/noetrail/blob/main/CHANGELOG.md"
+
+[project.scripts]
+noetrail = "noetrail.cli:main"
+noetrail-mcp = "noetrail.mcp:main"
+noetrail-bookmark-fetcher = "noetrail.bookmark_fetcher:main"
+# Compatibility aliases for existing installations and ZeroClaw deployments.
+knowledge = "noetrail.cli:main"
+knowledge-mcp = "noetrail.mcp:main"
+knowledge-bookmark-fetcher = "noetrail.bookmark_fetcher:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/noetrail/.knowledge" = [
+  ".knowledge/SPEC.md",
+  ".knowledge/config.yaml",
+  ".knowledge/relation-types.yaml",
+]
+"share/noetrail/.knowledge/schemas" = [
+  ".knowledge/schemas/*.json",
+]
+"share/noetrail/.knowledge/templates" = [
+  ".knowledge/templates/*.md",
+]
+"share/noetrail/.knowledge/packs/books" = [
+  ".knowledge/packs/books/*",
+]
+"share/noetrail/.knowledge/packs/knowledge-core" = [
+  ".knowledge/packs/knowledge-core/*",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+src = ["src", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+
+# flake8-bandit ("S") is enabled so that new shell, subprocess, and URL-opening
+# code has to be argued for. The suppressions below were reviewed one call site
+# at a time; the members of the family that flag the actually dangerous shapes
+# (S602/S604/S605/S606 -- shell=True, os.system, and friends) stay enabled.
+ignore = [
+  # Every `assert` in this project narrows a type for mypy after the value has
+  # already been checked by an explicit raise. None of them validate untrusted
+  # input, so running under `python -O` cannot remove a real check.
+  "S101",
+  # S603 fires on every list-form `subprocess.run`, of which this project has
+  # one shape only: a fixed argument vector built from `sys.executable` or a
+  # literal program name, never a string handed to a shell. Whether the danger
+  # it stands for is present is decided by S602/S604/S605, which stay on.
+  "S603",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# `git` is resolved through PATH on purpose: the boundary check and its test
+# have to use whatever git the developer or the CI runner has installed, and
+# there is no fixed path that would be correct on both.
+"tools/check_git_boundary.py" = ["S607"]
+"tests/test_git_boundary.py" = ["S607"]
+# The opener is only ever reached through `public_url()`, which rejects any
+# scheme but http/https and resolves the host to a public address first. That
+# is the project's SSRF guard; S310's generic warning adds nothing on top.
+"src/noetrail/bookmark_fetcher.py" = ["S310"]
+# Synthetic fixtures: a loopback HTTP server URL and placeholder bearer tokens.
+"tests/test_bookmark_fetch_mcp.py" = ["S310", "S106"]
+# `ATTACHMENT_TOKEN_PATTERN` is a regular expression, not a credential.
+"src/noetrail/mcp.py" = ["S105"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["noetrail"]
+
+# A bare `mypy` in the repository root checks the shipped package. `files`
+# stops at `src/noetrail` on purpose: the suite and the developer tools are not
+# annotated yet, and pulling them in would only produce noise nobody acts on.
+[tool.mypy]
+python_version = "3.11"
+files = ["src/noetrail"]
+# The project has no runtime dependencies; this only affects the stub-less
+# corners of the standard library.
+ignore_missing_imports = true
+# An ignore comment that stopped being needed is a stale claim about the code,
+# and a redundant cast hides the moment a signature actually got better.
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+strict_equality = true
+extra_checks = true
+
+# The modules with a small, closed surface are held to `--strict` so the
+# invariants they carry (path resolution, JSON-RPC framing, schema migration,
+# pack validation) cannot regress into `Any`. `cli`, `mcp` and
+# `bookmark_fetcher` handle arbitrary JSON from frontmatter and from the wire,
+# where `object` plus an explicit narrowing check is the honest annotation;
+# they stay at the base level until that is worth the churn.
+[[tool.mypy.overrides]]
+module = [
+  "noetrail.errors",
+  "noetrail.jsonrpc",
+  "noetrail.layout",
+  "noetrail.migrations",
+  "noetrail.mcp_protocol",
+  "noetrail.schema",
+]
+# The individual members of `--strict` rather than `strict = true`: mypy leaks
+# some of the flags of a per-module `strict` into the modules that are not
+# listed, which would silently hold `cli` to the same bar.
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+no_implicit_reexport = true
+
+[tool.noetrail]
+schema-version = 12
+test-command = "python3 -m unittest discover -s tests -v"

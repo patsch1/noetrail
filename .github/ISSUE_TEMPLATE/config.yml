@@ -1,0 +1,15 @@
+# Blank issues are disabled on purpose: the three forms exist so that a report
+# arrives with the version, the interpreter, the operating system, and a
+# `noetrail doctor` report already in it, which SUPPORT.md asks for and a free
+# text box does not enforce.
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/patsch1/noetrail/discussions
+    about: Usage questions, agent setups, and open-ended ideas belong in Discussions, not in the issue tracker.
+  - name: Report a security vulnerability
+    url: https://github.com/patsch1/noetrail/security/advisories/new
+    about: Never file a vulnerability as a public issue. Use the private advisory form; SECURITY.md states the response times.
+  - name: Support and what to include
+    url: https://github.com/patsch1/noetrail/blob/main/SUPPORT.md
+    about: What this project does and does not support, and how to sanitize a report before sending it.
