@@ -3,8 +3,9 @@
 Repository publication and a package release are separate decisions. Publishing
 the source makes the Git history, issues, pull requests and Actions output
 visible; creating the release tag also starts the package upload workflow.
-The first alpha remains `0.10.0a1`, with core schema 12 and no runtime
-dependencies. Neither version nor schema changes during this preparation.
+The first public alpha was `0.10.0a1`. The current `0.10.0a2` documentation
+release preserves core schema 12 and the dependency-free runtime; see its
+[release notes](releases/0.10.0a2.md).
 
 The public repository starts from a reviewed source snapshot dated 2026-10-07.
 Earlier development commits and repository conversations remain private.
@@ -97,7 +98,7 @@ Before tagging, complete the separate [publisher setup](releasing.md#one-time-se
 - Rehearse `Release artifacts` with `workflow_dispatch`. It must accept and
   attest the distributions; its upload jobs must stay skipped without a tag.
 - Review the artifacts, SBOM, checksums and compatibility/rollback notes,
-  then explicitly approve tag `v0.10.0a1` and the public package upload.
+  then explicitly approve the chosen `v<version>` tag and public package upload.
 - Use the CI-built artifacts for the GitHub prerelease and package indexes;
   do not replace them with local rebuilds. Update the package-dependent
   documentation only after the upload exists.
