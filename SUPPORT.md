@@ -11,8 +11,8 @@ belong in [Discussions](https://github.com/patsch1/noetrail/discussions).
 
 The three issue forms — bug, feature, documentation — require the program
 version, the Python version, the operating system, and a `noetrail doctor`
-report. Blank issues are disabled, because a report without those costs one
-round trip before anything can be looked at.
+report. Blank issues are disabled so reports include the information needed
+to reproduce and investigate a problem.
 
 Before filing:
 

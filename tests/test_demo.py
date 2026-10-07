@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -60,10 +61,17 @@ class SyntheticDemoTest(unittest.TestCase):
         self.assertEqual(page["items"][0]["title"], "Azure Harbor")
 
     def test_demo_contains_only_explicitly_synthetic_content(self) -> None:
+        # This exact binary fixture is a generated checkerboard with no photo
+        # metadata. Other files remain subject to the existing text audit.
+        image = REPOSITORY_ROOT / "demo" / "pilot" / "synthetic-checker.png"
+        self.assertEqual(
+            hashlib.sha256(image.read_bytes()).hexdigest(),
+            "c4cb962c6279d98a5f03c636d8a5d4bb9e14dcfedfebad489ec870d356a4e730",
+        )
         combined = "\n".join(
             path.read_text(encoding="utf-8")
             for path in sorted((REPOSITORY_ROOT / "demo").rglob("*"))
-            if path.is_file()
+            if path.is_file() and path != image
         )
         self.assertIn("synthetic", combined.casefold())
         self.assertNotIn('sensitivity: "personal"', combined)

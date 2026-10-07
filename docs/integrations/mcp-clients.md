@@ -73,9 +73,29 @@ python3 -m venv .venv
 .venv/bin/noetrail quickstart
 ```
 
-`quickstart` prints a server definition with absolute roots already filled in.
-Its `--json` form returns the same definition under `mcp_config` for an
-installer or client-management command.
+`quickstart` prints a server definition with absolute data and configuration
+roots. Its `--json` form returns it under `mcp_config`. The generated command is
+`noetrail-mcp`; it does not install that command on the client host's `PATH`.
+
+If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
+
+```json
+{
+  "mcpServers": {
+    "noetrail": {
+      "command": "uvx",
+      "args": [
+        "--from", "noetrail==0.10.0a1", "noetrail-mcp",
+        "--data-root", "/absolute/data", "--config-root", "/absolute/config"
+      ]
+    }
+  }
+}
+```
+
+Replace the roots with the paths returned by quickstart. Use the absolute
+`uvx` path if the client cannot resolve it. This launches the published alpha;
+it does not require a separately installed `noetrail-mcp` executable.
 
 ## Configure a desktop or editor host
 

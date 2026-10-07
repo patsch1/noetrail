@@ -37,3 +37,8 @@ renderer changes is wrapping lines at 100 columns, the way a terminal does.
 `tests/test_demo_recording.py` runs the session again and fails if the
 committed recording no longer matches, ignoring only the entry ID, revision,
 and timestamp that a fresh capture necessarily produces.
+
+## Alpha pilot
+
+The [pilot kit](pilot/README.md) adds synthetic imports, an image, a saved view,
+and an anonymous observation template for a disposable participant session.

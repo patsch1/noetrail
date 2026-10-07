@@ -1,0 +1,6 @@
+format_version: 1
+views:
+  pilot_destinations:
+    title: "Pilot destinations"
+    type: "travel/destination"
+    limit: 10

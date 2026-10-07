@@ -12,7 +12,7 @@ documented rollback path. Patch releases must not require a core data
 migration. A type-pack version change does not silently rewrite entries.
 
 Public pre-releases use PEP 440-compatible identifiers in Python artifacts and
-matching Git tags and release notes. The first planned public alpha is
+matching Git tags and release notes. The first published public alpha is
 `0.10.0a1` with tag `v0.10.0a1`. It preserves the existing internal
 `0.8.x`/`0.9.x` lineage and is not a promise of public API stability.
 

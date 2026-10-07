@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from datetime import date
 import os
 from pathlib import Path
 import re
@@ -51,9 +52,27 @@ def check(root: Path, *, tag: str | None = None) -> list[str]:
         )
 
     changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
-    changelog_heading = f"## {version} - Unreleased"
-    if changelog_heading not in changelog:
-        failures.append(f"CHANGELOG.md is missing {changelog_heading!r}")
+    # A published version has a release date; forcing "Unreleased" would
+    # contradict its actual status. Keep an exact, unique version heading
+    # and validate the calendar date instead of accepting arbitrary labels.
+    headings = re.findall(
+        rf"^## {re.escape(version)} - ([^\n]+)$", changelog, re.MULTILINE
+    )
+    if len(headings) != 1:
+        failures.append(
+            f"CHANGELOG.md must have exactly one heading for version {version!r}"
+        )
+    elif headings[0] != "Unreleased":
+        status = headings[0]
+        if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", status) is None:
+            failures.append(
+                "changelog status must be Unreleased or an ISO release date"
+            )
+        else:
+            try:
+                date.fromisoformat(status)
+            except ValueError:
+                failures.append("changelog release date is not a valid calendar date")
 
     notes_path = root / "docs" / "releases" / f"{version}.md"
     if not notes_path.is_file():

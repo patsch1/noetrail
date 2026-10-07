@@ -10,11 +10,10 @@ Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 scope; [AGENTS.md](AGENTS.md) is the same guidance written for an AI agent
 working in this repository.
 
-That second file is not hypothetical: this project is vibe-coded, and its
-existing code, tests, and documentation were written by AI agents following it
-— see [How this project was built](docs/ai-authorship.md). Nothing about that
-changes what is asked of a contribution: a hand-written patch and an
-agent-written one pass the same six gates and get the same review.
+The source, tests, and documentation were written by AI coding agents under
+maintainer direction; see [Development process and AI authorship](docs/ai-authorship.md).
+Human-written and AI-assisted contributions follow the same review, quality,
+and privacy requirements.
 
 ## Before opening a change
 
@@ -128,7 +127,7 @@ tool never makes that destructive choice automatically.
 ## Pull requests
 
 Keep one coherent change per pull request. The pull-request template has one
-section per item; fill in all four, and write "none affected" rather than
+summary followed by four review sections; fill in every section, and write "none affected" rather than
 deleting a section:
 
 - user-visible behavior and compatibility impact;

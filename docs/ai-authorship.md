@@ -1,85 +1,70 @@
-# How this project was built
+# Development process and AI authorship
 
-Noetrail is vibe-coded. The code, the tests, and this documentation were
-written by AI coding agents working from a single maintainer's instructions.
-This is not a hand-written core with some generated helpers around it — the
-whole repository was produced that way, from the first commit onward.
+Noetrail's code, tests, and documentation were written by AI coding agents
+under one human maintainer's direction. This includes the core implementation,
+not just generated helpers. The maintainer directs the work, reviews changes,
+and remains responsible for releases and support.
 
-It is stated up front because a reader deciding whether to run this against
-their private notes deserves to know it before they read anything else, not
-after they find it in the commit trailers.
+This disclosure lets users assess the development process before trusting the
+software with personal notes. Automated checks provide evidence about specific
+properties; they are not a guarantee of correctness or a substitute for review.
 
-## What is actually verifiable
+## Public provenance
 
-- The public history starts with a reviewed source snapshot on 2026-10-07.
-  Earlier development history remains in a private archive because it also
-  contained operational notes and private context. Its `Co-Authored-By`
-  trailers are therefore not publicly verifiable; this page discloses the
-  authorship of that earlier code.
-- [`AGENTS.md`](../AGENTS.md) is the instruction file the agents work from: the
-  gates they have to pass, what they must not touch, and when they have to stop
-  and ask. It is the closest thing this project has to a description of its own
-  authorship process.
-- [The decision log](internal/decision-log.md) records what was decided and
-  why, including the mistakes that led to a rule being added.
+The public history begins with a reviewed source snapshot dated 2026-10-07.
+Earlier development history remains in a private archive because it contained
+operational notes and private context. Earlier `Co-Authored-By` trailers are therefore
+not independently verifiable from the public repository.
 
-## What stands in for a human typing every line
+[AGENTS.md](../AGENTS.md) documents repository instructions for coding agents.
+[Contributing](../CONTRIBUTING.md) describes the same quality and privacy
+requirements for all contributors. The [decision log](internal/decision-log.md)
+records product decisions and their reasons.
 
-Generated code that nobody checks is a liability. What this repository relies
-on instead is that a change cannot land until it passes six gates, all of them
-enforced in CI and none of them waivable by the agent that wrote the change:
+## Required checks
 
-| Gate | What it protects |
+Every change must pass six contributor gates:
+
+| Gate | What it checks |
 | --- | --- |
-| `ruff` | style, unused code, common defects |
-| `mypy` | annotations and narrowing, `--strict` for the four modules that parse untrusted input |
-| `unittest` | behaviour, against synthetic fixtures only |
-| `tools/coverage.py` | 80% overall, 95% for migrations, layout, JSON-RPC, saved views, and the SSRF path |
-| `tools/check_secrets.py` | no committed credentials |
-| `tools/check_git_boundary.py` | no personal data in Git |
+| `ruff` | style, unused code, and common defects |
+| `mypy` | types and narrowing, with strict checks on selected boundary modules |
+| `unittest` | behavior against synthetic fixtures |
+| `tools/coverage.py` | 80% overall and 95% on the specified migration, layout, JSON-RPC, saved-view, and SSRF paths |
+| `tools/check_secrets.py` | recognized credential patterns in tracked source |
+| `tools/check_git_boundary.py` | private data paths and required Git exclusions |
 
-Beyond the gates, the design choices that limit blast radius are deliberate
-and predate any individual change: the runtime has no third-party
-dependencies, Markdown stays the source of truth so nothing is trapped in a
-format only this program can read, schema packs are data and cannot execute,
-every mutation is revision-checked and reversible, and whole-entry deletion
-goes through trash rather than `unlink`. A bug in generated code is still a
-bug; these boundaries decide how much it can cost.
+CodeQL runs on public changes. Publication also requires a full-history audit,
+release-consistency checks, source-distribution acceptance, and tests of a
+freshly installed wheel. Release artifacts carry checksums and build provenance.
+See [Release process](releasing.md).
 
-The tests are the part worth reading with the most suspicion, because tests
-written by the same process that wrote the code can agree with it and still
-both be wrong. Where that mattered most — migrations, the private-data
-boundary, the SSRF path, the saved-view parser — the tests assert against
-fixed expected output and a higher coverage floor rather than against the
-implementation's own behaviour.
+Tests written by the same process as the implementation can share its mistakes.
+Coverage measures executed statements, not correctness. Synthetic regression
+cases, fixed expected results, migration-preservation checks, and independent
+user feedback all contribute different evidence. The planned
+[alpha pilot](alpha-pilot.md) has not yet produced participant results.
 
-## What it does not mean
+## Design boundaries
 
-It does not dilute responsibility. One human maintainer directs the work,
-reviews it, and is accountable for what ships. The response times in
-[`SECURITY.md`](../SECURITY.md) are commitments a person made, and the
-[code of conduct](../CODE_OF_CONDUCT.md) is enforced by that person.
+Markdown remains the source of truth. The Python runtime has no third-party
+package dependencies, and schema packs cannot execute code. Updates support
+revision checks, whole-entry deletion normally uses recoverable trash, and
+migrations are explicit. Permanent purge and some local CLI maintenance
+operations are intentionally outside the agent tool surface. A complete backup
+is still required for recovery after a migration or a destructive operation.
 
-It also does not mean the code is unreviewed, or that a report will be
-dismissed because "the agent wrote it". A bug is a bug. If you find one,
-[`SUPPORT.md`](../SUPPORT.md) says how to file it and
-[`SECURITY.md`](../SECURITY.md) says where a vulnerability goes instead.
+AI clients are a separate trust boundary: a connected client can read vault
+content and may send it to its model provider. See [Privacy](privacy.md).
 
-## If that is a dealbreaker
+## Accountability and reports
 
-That is a legitimate position, and this page exists so you can take it early.
-The project is Apache-2.0 licensed and the vault format is plain Markdown with
-YAML frontmatter, specified in [`.knowledge/SPEC.md`](../.knowledge/SPEC.md).
-Nothing you capture with it is locked to this implementation.
+The maintainer owns release decisions, the response commitments in
+[SECURITY.md](../SECURITY.md), and enforcement of the
+[code of conduct](../CODE_OF_CONDUCT.md). AI authorship does not change how bugs
+or vulnerabilities are handled. Use [Support](../SUPPORT.md) for reproducible
+bugs and the private security channel for vulnerabilities.
 
-## Public static analysis
-
-CodeQL runs on public changes alongside the six gates. Its security findings
-are reviewed against the actual data flow: the secret-scanner regressions
-write deliberately fake, generated tokens only inside temporary directories,
-and the scanner reports a path, line and fixed category without copying a
-matched value. These test cases remain enabled. A reviewed false positive
-gets an explicit explanation in the alert record rather than disabling the
-query. Standalone test bootstrap imports are also retained for their required
-source-path setup. Code quality findings improve assertion diagnostics and
-make intentional exits and silent HTTP logging explicit.
+The Apache-2.0 license and documented Markdown format allow inspection and
+independent use of stored entries. The format is specified in
+[.knowledge/SPEC.md](../.knowledge/SPEC.md).

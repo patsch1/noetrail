@@ -63,6 +63,37 @@ class ReleaseConsistencyTest(unittest.TestCase):
         result = self.run_check("--tag", "v1.2.3rc1")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_published_release_with_valid_date_passes(self) -> None:
+        (self.root / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## Unreleased\n\n## 1.2.3rc1 - 2024-02-29\n",
+            encoding="utf-8",
+        )
+        result = self.run_check("--tag", "v1.2.3rc1")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_invalid_release_status_or_calendar_date_fails(self) -> None:
+        statuses = ("Published", "2023-02-29", "2026-13-01", "20260101", "2026-1-01")
+        for status in statuses:
+            with self.subTest(status=status):
+                (self.root / "CHANGELOG.md").write_text(
+                    f"# Changelog\n\n## 1.2.3rc1 - {status}\n", encoding="utf-8"
+                )
+                result = self.run_check()
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("changelog", result.stdout)
+
+    def test_missing_or_ambiguous_version_heading_fails(self) -> None:
+        for text in (
+            "## 1.2.2 - Unreleased\n",
+            "Text mentions ## 1.2.3rc1 - Unreleased\n",
+            "## 1.2.3rc1 - Unreleased\n## 1.2.3rc1 - 2024-02-29\n",
+        ):
+            with self.subTest(text=text):
+                (self.root / "CHANGELOG.md").write_text(text, encoding="utf-8")
+                result = self.run_check()
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("exactly one heading", result.stdout)
+
     def test_mismatched_source_version_and_tag_fail(self) -> None:
         (self.root / "src" / "noetrail" / "version.py").write_text(
             'FALLBACK_VERSION = "1.2.2"\n',

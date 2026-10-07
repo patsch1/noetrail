@@ -57,6 +57,10 @@ python3 -m venv .venv
 .venv/bin/noetrail quickstart
 ```
 
+For `uvx`, use the matching [MCP launcher configuration](integrations/mcp-clients.md#install-and-get-the-configuration-block);
+the generated `noetrail-mcp` name is not automatically installed on the host's
+`PATH`. A virtual environment supplies `.venv/bin/noetrail-mcp` instead.
+
 `quickstart` creates `~/noetrail/data` and `~/noetrail/config`, writes a few
 sample entries, and prints the MCP server definition with absolute paths.
 `--path` moves both roots elsewhere; `--json` prints the same information

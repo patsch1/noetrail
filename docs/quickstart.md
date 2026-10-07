@@ -19,7 +19,9 @@ uvx --from 'noetrail==0.10.0a1' noetrail quickstart
 virtual-environment and TestPyPI alternatives. From a checkout the same command is
 `.venv/bin/noetrail quickstart`, which is what the rest of this page uses. It
 creates `~/noetrail/data` and `~/noetrail/config` (override with `--path`),
-writes three sample entries, and prints the MCP server block.
+writes three sample entries, and prints the MCP server block. With `uvx`, use
+the [uvx client configuration](integrations/mcp-clients.md#install-and-get-the-configuration-block)
+so the client can launch the package without a global `noetrail-mcp` command.
 
 ## 1. Install the local build
 
