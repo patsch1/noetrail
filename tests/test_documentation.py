@@ -238,11 +238,10 @@ class DocumentationTest(unittest.TestCase):
 
         readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
 
-        # No package index badge while nothing is published: it would render
-        # as "invalid" or, worse, as a version that does not exist.
+        # The first alpha is published; its entry command selects that version.
         self.assertNotIn("img.shields.io/pypi", readme)
-        # TestPyPI is published; the production PyPI URL remains premature.
-        self.assertNotRegex(readme, r"https?://pypi\.org/project/noetrail(?:/|\b)")
+        self.assertIn("https://pypi.org/project/noetrail/0.10.0a1/", readme)
+        self.assertIn("uvx --from 'noetrail==0.10.0a1' noetrail quickstart", readme)
 
         # The CI badge has to point at a workflow that exists.
         self.assertIn(

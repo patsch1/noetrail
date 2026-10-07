@@ -53,18 +53,17 @@ server alias shown in that client.
 
 ## Install and get the configuration block
 
-The alpha is available on TestPyPI; its
+The alpha is on PyPI; its
 [installation command](../installation.md#install-single-user-own-machine)
-installs the same CLI and MCP entry points. Production PyPI publication is
-still pending. After that approval, use the default package index:
+installs the same CLI and MCP entry points. Use the pinned alpha version:
 
-<!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
+<!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx noetrail quickstart          # or: pipx run noetrail quickstart
+uvx --from 'noetrail==0.10.0a1' noetrail quickstart
 ```
 
-From a checkout today:
+From a checkout as an alternative:
 
 <!-- docs-check: skip - installs the checkout -->
 
