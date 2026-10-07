@@ -11,8 +11,11 @@ after they find it in the commit trailers.
 
 ## What is actually verifiable
 
-- The Git history carries `Co-Authored-By` trailers naming the agent that
-  wrote each change.
+- The public history starts with a reviewed source snapshot on 2026-10-07.
+  Earlier development history remains in a private archive because it also
+  contained operational notes and private context. Its `Co-Authored-By`
+  trailers are therefore not publicly verifiable; this page discloses the
+  authorship of that earlier code.
 - [`AGENTS.md`](../AGENTS.md) is the instruction file the agents work from: the
   gates they have to pass, what they must not touch, and when they have to stop
   and ask. It is the closest thing this project has to a description of its own

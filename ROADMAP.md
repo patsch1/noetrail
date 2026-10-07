@@ -23,14 +23,12 @@ rollback, before and after `1.0`. See
 
 **Publication.** The GitHub Release artifacts and the PyPI upload path are
 built and tested, and the workflow publishes through Trusted Publishing from a
-protected environment. Making the repository public and creating the PyPI
-project are explicit human decisions that have not been taken yet. See
+protected environment. The source is public; the first package upload still
+requires an explicit maintainer decision. See
 [Release process](docs/releasing.md).
 
-Publication also switches on the CodeQL workflow. Code scanning needs GitHub
-Advanced Security while a repository is private, so the job skips itself until
-then rather than failing every pull request for a reason unrelated to the
-code.
+CodeQL scans public changes through the repository workflow. A successful
+scan is part of source acceptance; it does not approve a package upload.
 
 **Drop the compatibility shims (`0.11.0`).** `tools/know.py`,
 `tools/knowledge_mcp.py`, and `tools/bookmark_fetch_mcp.py` exist only for

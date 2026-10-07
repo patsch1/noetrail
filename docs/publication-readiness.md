@@ -6,6 +6,11 @@ visible; creating the release tag also starts the package upload workflow.
 The first alpha remains `0.10.0a1`, with core schema 12 and no runtime
 dependencies. Neither version nor schema changes during this preparation.
 
+The public repository starts from a reviewed source snapshot dated 2026-10-07.
+Earlier development commits and repository conversations remain private.
+[AI authorship](ai-authorship.md) explains the resulting provenance limit.
+Source publication does not claim a package upload or a completed user pilot.
+
 ## Technical acceptance
 
 Before approving the source publication, verify the final merged commit:
@@ -83,10 +88,8 @@ observations. No pilot completion is claimed by this preparation.
 
 Before tagging, complete the separate [publisher setup](releasing.md#one-time-setup-before-the-first-upload):
 
-- Confirm the GitHub `pypi` environment restricts deployment to `v*` tags and
-  has the required maintainer reviewer. During the private-repository
-  preparation the environment has the tag restriction but no reviewer rule;
-  this is still a package-publication blocker.
+- Confirm the GitHub `pypi` environment restricts deployment to `v*` tags,
+  has the required maintainer reviewer and disables administrator bypass.
 - Configure and personally verify the TestPyPI and PyPI pending Trusted
   Publishers for `release.yml`, using the exact owner, repository and
   environment identities. No API token is needed.

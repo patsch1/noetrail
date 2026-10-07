@@ -41,12 +41,11 @@ failure: nothing is uploaded.
    publisher with environment `pypi`.
 4. Nothing else. Do not create an API token; the workflow has no input for one.
 
-The `pypi` environment is already restricted to tags matching `v*`. GitHub
-currently rejects the required-reviewer rule for this private repository's
-billing plan. **Public publishing remains blocked** until the repository plan
-or visibility supports that rule and a maintainer verifies it in Settings.
-The workflow comment records the same gate; the absence of a reviewer must not
-be treated as an implicit waiver.
+The public repository uses a `pypi` environment restricted to tags matching
+`v*`, with the maintainer as its required reviewer and administrator bypass
+disabled. Verify these rules in Settings before every upload. The pending
+publishers authorize the exact owner, repository, workflow and environment;
+creating them does not upload a distribution or reserve the package name.
 
 ### What the release workflow produces
 
@@ -123,11 +122,11 @@ in one pass, with the text to search for:
 
 **When the repository becomes public**
 
-| Page | Says today |
+| Page | Updated source-publication statement |
 | --- | --- |
-| `ROADMAP.md` | "explicit human decisions that have not been taken yet" |
-| `ROADMAP.md` | CodeQL "skips itself until then", because code scanning needs Advanced Security on a private repository |
-| `README.md` | "Making the PyPI project exist is still a separate human decision" |
+| `ROADMAP.md` | "The source is public" |
+| `ROADMAP.md` | "CodeQL scans public changes" |
+| `README.md` | "source repository is public" |
 
 **When `0.10.0a1` is on a public package index**
 

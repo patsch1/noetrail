@@ -253,8 +253,9 @@ it, restores the pre-migration backup, and validates that rollback boundary.
 Noetrail `0.10.0a1` is the first planned public alpha. The release workflow
 builds the wheel and source distribution, rebuilds them and compares, attaches
 a build-provenance attestation and a CycloneDX bill of materials, and uploads
-to PyPI through Trusted Publishing from a protected environment. Making the
-PyPI project exist is still a separate human decision. See
+to PyPI through Trusted Publishing from a protected environment. The source
+repository is public. Making the PyPI project exist is still a separate human
+decision. See
 [Release process][releasing], [versioning][versioning], and
 [current release notes][release-notes].
 

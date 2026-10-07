@@ -8,6 +8,9 @@ All notable user-visible changes will be documented here. The project follows
 
 ### Added
 
+- a public source snapshot with disclosed AI authorship and a fresh Git history;
+  earlier development history and operational conversations remain private;
+
 - explicit source-scoped absence wording and full candidate reads after an
   unsuccessful inferred type restriction in the ZeroClaw knowledge prompt;
   delegated answers must preserve bounded-search uncertainty and aggregate

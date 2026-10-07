@@ -151,9 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # The `pypi` environment is restricted to v* tags. A required reviewer is
-    # also a publication gate; GitHub does not offer that rule on the current
-    # private-repository plan, so docs/releasing.md keeps publication blocked
-    # until the rule can actually be enabled. Trusted Publishing is bound to
+    # also a publication gate, with administrator bypass disabled. Verify the
+    # environment rules before tagging. Trusted Publishing is bound to
     # this repository, workflow file, and environment name.
     environment:
       name: pypi
