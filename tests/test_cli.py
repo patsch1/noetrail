@@ -879,9 +879,9 @@ class KnowCliTest(unittest.TestCase):
         )
         self.assertEqual(experienced.returncode, 0, experienced.stderr)
         experience_result = json.loads(experienced.stdout)
-        self.assertTrue(
-            {"last_experienced_at", "interest_status", "review", "rating"}
-            <= set(experience_result["changed"])
+        self.assertLessEqual(
+            {"last_experienced_at", "interest_status", "review", "rating"},
+            set(experience_result["changed"]),
         )
         content = (self.root / rum_result["created"]).read_text(encoding="utf-8")
         self.assertIn('"interest_status":"none"', content)
@@ -2628,15 +2628,15 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
         self.assertTrue(knowledge["workspace_only"])
         self.assertEqual(knowledge["allowed_commands"], [])
         self.assertEqual(knowledge["shell_env_passthrough"], [])
-        self.assertTrue(
-            {"tool_search", "read_skill", "delegate"}
-            <= set(knowledge["allowed_tools"])
+        self.assertLessEqual(
+            {"tool_search", "read_skill", "delegate"},
+            set(knowledge["allowed_tools"]),
         )
         self.assertEqual(
             knowledge["delegation_policy"]["mode"],
             "allow",
         )
-        self.assertTrue(
+        self.assertLessEqual(
             {
                 "shell",
                 "file_read",
@@ -2647,10 +2647,10 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
                 "http_request",
                 "web_fetch",
                 "browser",
-            }
-            <= set(knowledge["excluded_tools"])
+            },
+            set(knowledge["excluded_tools"]),
         )
-        self.assertTrue(
+        self.assertLessEqual(
             {
                 "knowledge__inventory",
                 "knowledge__search",
@@ -2660,10 +2660,10 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
                 "knowledge__relations",
                 "knowledge__list_trash",
                 "knowledge__validate",
-            }
-            <= set(knowledge["auto_approve"])
+            },
+            set(knowledge["auto_approve"]),
         )
-        self.assertTrue(
+        self.assertLessEqual(
             {
                 "knowledge__capture",
                 "knowledge__save_bookmark",
@@ -2672,8 +2672,8 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
                 "knowledge__add_attachment",
                 "knowledge__trash",
                 "knowledge__restore",
-            }
-            <= set(knowledge["always_ask"])
+            },
+            set(knowledge["always_ask"]),
         )
 
         servers = {
@@ -2707,7 +2707,7 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
             set(fetcher["allowed_tools"]),
             {"tool_search", "read_skill", "bookmark_fetch__fetch"},
         )
-        self.assertTrue(
+        self.assertLessEqual(
             {
                 "file_read",
                 "file_write",
@@ -2715,8 +2715,8 @@ class ZeroClawSecurityProfileTest(unittest.TestCase):
                 "memory_recall",
                 "web_search_tool",
                 "web_fetch",
-            }
-            <= set(fetcher["excluded_tools"])
+            },
+            set(fetcher["excluded_tools"]),
         )
         self.assertFalse(config["link_enricher"]["enabled"])
         self.assertFalse(config["web_fetch"]["enabled"])

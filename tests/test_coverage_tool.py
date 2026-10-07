@@ -16,7 +16,6 @@ import tempfile
 import textwrap
 import unittest
 
-import tests  # noqa: F401
 from tests import temporary_root
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]

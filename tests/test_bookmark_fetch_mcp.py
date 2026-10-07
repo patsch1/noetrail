@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import threading
 import unittest
-from unittest import mock
+import unittest.mock
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -23,7 +23,7 @@ class BookmarkMetadataExtractionTest(unittest.TestCase):
         self.assertEqual(result["bookmark"]["fetch_status"], "blocked")
         self.assertEqual(result["warnings"], ["non_public_destination_blocked"])
 
-    @mock.patch.object(
+    @unittest.mock.patch.object(
         FETCHER.socket,
         "getaddrinfo",
         return_value=[
@@ -37,7 +37,7 @@ class BookmarkMetadataExtractionTest(unittest.TestCase):
         ],
     )
     def test_extracts_allowlisted_metadata_and_drops_prompt_like_text(
-        self, _: mock.Mock
+        self, _: unittest.mock.Mock
     ) -> None:
         html = """
         <html lang="en">

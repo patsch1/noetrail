@@ -71,3 +71,15 @@ That is a legitimate position, and this page exists so you can take it early.
 The project is Apache-2.0 licensed and the vault format is plain Markdown with
 YAML frontmatter, specified in [`.knowledge/SPEC.md`](../.knowledge/SPEC.md).
 Nothing you capture with it is locked to this implementation.
+
+## Public static analysis
+
+CodeQL runs on public changes alongside the six gates. Its security findings
+are reviewed against the actual data flow: the secret-scanner regressions
+write deliberately fake, generated tokens only inside temporary directories,
+and the scanner reports a path, line and fixed category without copying a
+matched value. These test cases remain enabled. A reviewed false positive
+gets an explicit explanation in the alert record rather than disabling the
+query. Standalone test bootstrap imports are also retained for their required
+source-path setup. Code quality findings improve assertion diagnostics and
+make intentional exits and silent HTTP logging explicit.

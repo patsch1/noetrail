@@ -12,7 +12,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-import tests  # noqa: F401
+import tests  # noqa: F401 - bootstrap src before standalone package imports
 
 # `tests` puts `src` on the path, so the package imports have to follow it.
 BOOK_LAYOUTS = {

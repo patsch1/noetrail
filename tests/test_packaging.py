@@ -179,8 +179,10 @@ class SourceDistributionTest(unittest.TestCase):
             [
                 interpreter,
                 "-c",
-                "import setuptools.build_meta as backend;"
-                "print(backend.build_sdist(__import__('sys').argv[1]))",
+                (
+                    "import setuptools.build_meta as backend;"
+                    + "print(backend.build_sdist(__import__('sys').argv[1]))"
+                ),
                 str(output),
             ],
             cwd=source,

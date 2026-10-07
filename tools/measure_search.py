@@ -396,7 +396,7 @@ def main() -> int:
                 ),
                 arguments.repeats,
             ),
-            "cli_import_and_parse": timed(lambda: build_parser(), arguments.repeats),
+            "cli_import_and_parse": timed(build_parser, arguments.repeats),
             "in_process_scan": timed(
                 lambda: load_entries(layout.data_root), arguments.repeats
             ),

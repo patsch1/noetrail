@@ -474,7 +474,7 @@ class SafeRedirectHandler(HTTPRedirectHandler):
         # Same reason as in `redirect_request`: `fp` is widened to `object`
         # because this hook only forwards it, and urllib passes the file-like
         # response the base implementation expects.
-        return super().http_error_302(req, cast("IO[bytes]", fp), code, msg, headers)
+        return super().http_error_302(req, cast(IO[bytes], fp), code, msg, headers)
 
     http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
@@ -506,7 +506,7 @@ class SafeRedirectHandler(HTTPRedirectHandler):
         # guarantee for the super() call without weakening any check here.
         return super().redirect_request(
             request,
-            cast("IO[bytes]", response),
+            cast(IO[bytes], response),
             code,
             message,
             cast(HTTPMessage, headers),
@@ -955,7 +955,8 @@ class BookmarkFetchHttpHandler(BaseHTTPRequestHandler):
     server: BookmarkFetchHttpServer
 
     def log_message(self, format: str, *args: object) -> None:
-        del format, args
+        # Suppress request logging because URLs may contain private user data.
+        return
 
     def _send_json(self, status: int, payload: object | None = None) -> None:
         body = (
@@ -1121,6 +1122,7 @@ def main() -> int:
         try:
             http_server.serve_forever()
         except KeyboardInterrupt:
+            # An interactive stop is normal; the finally block closes the socket.
             pass
         finally:
             http_server.server_close()
