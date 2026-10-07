@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import unittest
 
-import tests  # noqa: F401
+import tests  # noqa: F401 - bootstrap src before standalone package imports
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
@@ -325,8 +325,9 @@ class BuiltinSchemaRegistryTest(unittest.TestCase):
             envelope["properties"]["schema_version"]["const"],
             CURRENT_SCHEMA_VERSION,
         )
-        self.assertTrue(
-            {"type_version", "attributes"} <= set(envelope["required"])
+        self.assertLessEqual(
+            {"type_version", "attributes"},
+            set(envelope["required"]),
         )
         # Optional on purpose: an entry that records nothing about where its
         # values came from is normal, not invalid.

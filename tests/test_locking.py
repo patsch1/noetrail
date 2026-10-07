@@ -16,7 +16,6 @@ import unittest
 
 import noetrail
 import noetrail.cli
-from noetrail.cli import build_parser, command_is_mutating
 import noetrail.commands.edit
 from noetrail.errors import InternalError
 from tests import CLI_COMMAND, temporary_root
@@ -202,7 +201,7 @@ def subcommand_parsers() -> dict[str, argparse.ArgumentParser]:
                 else:
                     found[label] = child
 
-    walk(build_parser(), "")
+    walk(noetrail.cli.build_parser(), "")
     return found
 
 
@@ -413,7 +412,7 @@ class MutationDeclarationTest(unittest.TestCase):
     def test_missing_declaration_is_rejected_instead_of_silently_shared(self) -> None:
         namespace = argparse.Namespace(command="capture")
         with self.assertRaises(InternalError):
-            command_is_mutating(namespace)
+            noetrail.cli.command_is_mutating(namespace)
 
 
 class ConcurrentVaultAccessTest(unittest.TestCase):

@@ -8,6 +8,9 @@ All notable user-visible changes will be documented here. The project follows
 
 ### Added
 
+- public CodeQL analysis with reviewed synthetic-secret test findings and
+  clearer test assertions, parser exits and HTTP shutdown/logging intent;
+
 - a public source snapshot with disclosed AI authorship and a fresh Git history;
   earlier development history and operational conversations remain private;
 

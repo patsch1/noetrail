@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import socket
 import threading
 import unittest
-from unittest import mock
+import unittest.mock
 
 from noetrail import bookmark_fetcher as FETCHER
 
@@ -41,7 +41,7 @@ def fake_dns(answers: dict[str, object]) -> object:
             return answer
         return real_getaddrinfo(host, port, *args, **kwargs)  # type: ignore[arg-type]
 
-    return mock.patch.object(FETCHER.socket, "getaddrinfo", resolve)
+    return unittest.mock.patch.object(FETCHER.socket, "getaddrinfo", resolve)
 
 
 class RouteHandler(BaseHTTPRequestHandler):
@@ -63,7 +63,8 @@ class RouteHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, format: str, *args: object) -> None:
-        del format, args
+        # Keep the synthetic HTTP server silent during expected request failures.
+        return
 
 
 class RouteServer(ThreadingHTTPServer):
@@ -337,7 +338,7 @@ class AddressPinningTest(RedirectTestCase):
             looked_up.append(host)
             return real_getaddrinfo(host, port, *args, **kwargs)  # type: ignore[arg-type]
 
-        with mock.patch.object(FETCHER.socket, "getaddrinfo", spy):
+        with unittest.mock.patch.object(FETCHER.socket, "getaddrinfo", spy):
             result = self.fetch()
 
         bookmark: dict[str, object] = result["bookmark"]  # type: ignore[assignment]

@@ -216,7 +216,7 @@ class RetypeTest(unittest.TestCase):
         self.retype(entry_id, "--to", "recipe", "--apply")
         self.run_cli("validate")
         relations = json.loads(self.run_cli("relations", entry_id).stdout)
-        self.assertTrue(json.dumps(relations).find(other) >= 0)
+        self.assertGreaterEqual(json.dumps(relations).find(other), 0)
 
 
 if __name__ == "__main__":

@@ -97,9 +97,11 @@ def build_command(interpreter: str, output: Path) -> list[str]:
         "-c",
         # `build_sdist` replaces `sys.argv` while it runs the setup command,
         # so the output directory is read once and kept.
-        "import sys;import setuptools.build_meta as backend;"
-        "target = sys.argv[1];"
-        "backend.build_sdist(target);backend.build_wheel(target)",
+        (
+            "import sys;import setuptools.build_meta as backend;"
+            + "target = sys.argv[1];"
+            + "backend.build_sdist(target);backend.build_wheel(target)"
+        ),
         str(output),
     ]
 

@@ -71,7 +71,6 @@ def command_capture(args: argparse.Namespace, root: Path) -> int:
             raise InvalidRequest(
                 "--attributes-file is only valid for pack-defined types"
             )
-        attributes = None
     else:
         try:
             attributes = custom_type.validate_attributes(

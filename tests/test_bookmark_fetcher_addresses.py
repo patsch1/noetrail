@@ -10,7 +10,7 @@ from __future__ import annotations
 import ipaddress
 import socket
 import unittest
-from unittest import mock
+import unittest.mock
 
 from noetrail import bookmark_fetcher as FETCHER
 
@@ -123,7 +123,7 @@ class UrlShapeTest(unittest.TestCase):
 
 class ResolvedHostPolicyTest(unittest.TestCase):
     def test_hostname_resolving_to_nat64_metadata_is_blocked(self) -> None:
-        with mock.patch.object(
+        with unittest.mock.patch.object(
             FETCHER.socket,
             "getaddrinfo",
             return_value=dns_answer("64:ff9b::a9fe:a9fe"),
@@ -137,7 +137,9 @@ class ResolvedHostPolicyTest(unittest.TestCase):
 
     def test_one_private_answer_blocks_the_whole_name(self) -> None:
         answers = dns_answer("93.184.216.34") + dns_answer("64:ff9b::7f00:1")
-        with mock.patch.object(FETCHER.socket, "getaddrinfo", return_value=answers):
+        with unittest.mock.patch.object(
+            FETCHER.socket, "getaddrinfo", return_value=answers
+        ):
             result = FETCHER.fetch_bookmark(
                 "http://mixed.example/x",
                 timeout_seconds=1,
@@ -146,7 +148,7 @@ class ResolvedHostPolicyTest(unittest.TestCase):
         self.assertEqual(result["warnings"], ["non_public_destination_blocked"])
 
     def test_empty_answer_is_a_resolution_failure(self) -> None:
-        with mock.patch.object(FETCHER.socket, "getaddrinfo", return_value=[]):
+        with unittest.mock.patch.object(FETCHER.socket, "getaddrinfo", return_value=[]):
             result = FETCHER.fetch_bookmark(
                 "http://empty.example/x",
                 timeout_seconds=1,
@@ -160,7 +162,9 @@ class DestinationGuardTest(unittest.TestCase):
         guard = FETCHER.DestinationGuard()
         answers = dns_answer("93.184.216.34", 80) + dns_answer("93.184.216.35", 80)
 
-        with mock.patch.object(FETCHER.socket, "getaddrinfo", return_value=answers):
+        with unittest.mock.patch.object(
+            FETCHER.socket, "getaddrinfo", return_value=answers
+        ):
             normalized = guard.check("http://example.com/page")
 
         self.assertEqual(normalized, "http://example.com/page")
@@ -171,7 +175,7 @@ class DestinationGuardTest(unittest.TestCase):
 
     def test_https_defaults_to_port_443(self) -> None:
         guard = FETCHER.DestinationGuard()
-        with mock.patch.object(
+        with unittest.mock.patch.object(
             FETCHER.socket,
             "getaddrinfo",
             return_value=dns_answer("93.184.216.34", 443),

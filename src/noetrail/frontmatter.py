@@ -534,7 +534,7 @@ def _decode_single_quoted(reader: _Reader, text: str, index: int) -> str:
             continue
         _require_only_comment(reader, text[position + 1 :], index)
         return "".join(parts)
-    reader.fail("unterminated quoted value", index)
+    return reader.fail("unterminated quoted value", index)
 
 
 def _require_only_comment(reader: _Reader, remainder: str, index: int) -> None:
