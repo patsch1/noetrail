@@ -9,6 +9,9 @@ The first public alpha is `0.10.0a1`, available from
 preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
+The current alpha is `0.10.0a2`, a documentation release with unchanged runtime
+behavior and core schema 12. See its [release notes](releases/0.10.0a2.md).
+
 The intended channels are:
 
 1. a GitHub Release containing the CI-built wheel, source distribution, and
@@ -131,12 +134,12 @@ release channel or current alpha changes:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**Published `0.10.0a1` on production PyPI**
+**Published `0.10.0a2` on production PyPI**
 
 | Page | Updated package-publication statement |
 | --- | --- |
 | `README.md` | "available on PyPI, GitHub and TestPyPI" |
-| `docs/quickstart.md` | "`0.10.0a1` is on PyPI" |
+| `docs/quickstart.md` | "`0.10.0a2` is on PyPI" |
 | `docs/installation.md` | "The alpha is on PyPI" |
 | `docs/integrations/mcp-clients.md` | "The alpha is on PyPI" |
 
@@ -179,7 +182,7 @@ and [redacting comment revisions](https://docs.github.com/en/communities/moderat
    failure must be resolved with an explicitly approved rewrite or a new clean
    public repository before visibility changes.
 6. Review compatibility and rollback notes.
-7. Create annotated tag `v0.10.0a1` only after publication approval.
+7. Create annotated tag `v0.10.0a2` only after publication approval.
 
 ## Artifact workflow
 
@@ -209,12 +212,12 @@ After reviewing the artifact, create the prerelease from the downloaded files
 without rebuilding them:
 
 ```sh
-gh release create v0.10.0a1 \
+gh release create v0.10.0a2 \
   --prerelease \
-  --title "Noetrail 0.10.0a1" \
-  --notes-file docs/releases/0.10.0a1.md \
-  dist/noetrail-0.10.0a1-py3-none-any.whl \
-  dist/noetrail-0.10.0a1.tar.gz \
+  --title "Noetrail 0.10.0a2" \
+  --notes-file docs/releases/0.10.0a2.md \
+  dist/noetrail-0.10.0a2-py3-none-any.whl \
+  dist/noetrail-0.10.0a2.tar.gz \
   dist/noetrail-sbom.cdx.json \
   dist/SHA256SUMS.txt
 ```
@@ -227,15 +230,15 @@ Download the distributions, SBOM and checksum manifest into the same directory;
 the manifest uses filenames relative to that directory, without build paths:
 
 ```sh
-gh attestation verify noetrail-0.10.0a1-py3-none-any.whl --repo patsch1/noetrail
+gh attestation verify noetrail-0.10.0a2-py3-none-any.whl --repo patsch1/noetrail
 sha256sum --check SHA256SUMS.txt
 ```
 
 ## Rollback
 
 Program rollback selects the previous immutable release. If a schema migration
-has written private data, restore the matching pre-migration data-root backup
-and previous program version together. Never lower `schema_version` manually.
+has written private data, restore the matching pre-migration data and configuration
+backups and previous program version together. Never lower `schema_version` manually.
 
 The release acceptance test performs this sequence with synthetic data. A
 production deployment must still verify its own storage backup and restore

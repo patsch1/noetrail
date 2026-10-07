@@ -7,8 +7,9 @@ and shipped is in [the decision log](docs/internal/decision-log.md).
 
 ## Where it stands
 
-`0.10.0a1` is the first public alpha, available as a GitHub prerelease and on
-PyPI and TestPyPI. The vault format is at core
+`0.10.0a2` is the current public alpha, available as a GitHub prerelease and on
+PyPI and TestPyPI. It updates documentation and synthetic pilot materials; the
+first public alpha was `0.10.0a1`. The vault format is at core
 schema 12, the CLI and the Noetrail MCP server share one validated code path,
 custom types are declarative schema packs, and the runtime has no third-party
 dependencies. Migrations are deterministic and previewable, and every release

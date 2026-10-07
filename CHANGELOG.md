@@ -6,6 +6,10 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a2 - 2026-10-07
+
+Documentation release; runtime behavior and core schema 12 are unchanged.
+
 - clarify the public README, installation scope, AI authorship, retrieval
   limits, and privacy boundaries;
 - add a synthetic alpha-pilot kit and an anonymous observation template;

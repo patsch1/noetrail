@@ -238,10 +238,16 @@ class DocumentationTest(unittest.TestCase):
 
         readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
 
-        # The first alpha is published; its entry command selects that version.
+        with (REPOSITORY_ROOT / "pyproject.toml").open("rb") as handle:
+            project = tomllib.load(handle)["project"]
+        current_version = project["version"]
+
+        # The entry command and index link select the current package version.
         self.assertNotIn("img.shields.io/pypi", readme)
-        self.assertIn("https://pypi.org/project/noetrail/0.10.0a1/", readme)
-        self.assertIn("uvx --from 'noetrail==0.10.0a1' noetrail quickstart", readme)
+        self.assertIn(f"https://pypi.org/project/noetrail/{current_version}/", readme)
+        self.assertIn(
+            f"uvx --from 'noetrail=={current_version}' noetrail quickstart", readme
+        )
 
         # The CI badge has to point at a workflow that exists.
         self.assertIn(
@@ -263,8 +269,6 @@ class DocumentationTest(unittest.TestCase):
         assert threshold is not None
         self.assertIn(f"coverage%20gate-{threshold.group(1)}%25", readme)
 
-        with (REPOSITORY_ROOT / "pyproject.toml").open("rb") as handle:
-            project = tomllib.load(handle)["project"]
         self.assertIn(
             f"runtime%20dependencies-{len(project['dependencies'])}", readme
         )

@@ -16,6 +16,9 @@ matching Git tags and release notes. The first published public alpha is
 `0.10.0a1` with tag `v0.10.0a1`. It preserves the existing internal
 `0.8.x`/`0.9.x` lineage and is not a promise of public API stability.
 
+`0.10.0a2` updates public documentation and synthetic pilot materials without
+changing runtime behavior or the core schema.
+
 The compatibility window for a previous core schema is stated in the release
 notes. During such a window, ordinary capture or update operations must not
 implicitly migrate old entries. Once support is removed, `noetrail doctor`

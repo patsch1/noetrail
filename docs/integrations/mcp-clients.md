@@ -60,7 +60,7 @@ installs the same CLI and MCP entry points. Use the pinned alpha version:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a1' noetrail quickstart
+uvx --from 'noetrail==0.10.0a2' noetrail quickstart
 ```
 
 From a checkout as an alternative:
@@ -85,7 +85,7 @@ If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a1", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a2", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }
