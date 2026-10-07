@@ -9,8 +9,8 @@ dependencies. Neither version nor schema changes during this preparation.
 The public repository starts from a reviewed source snapshot dated 2026-10-07.
 Earlier development commits and repository conversations remain private.
 [AI authorship](ai-authorship.md) explains the resulting provenance limit.
-The first GitHub prerelease and TestPyPI upload are available. Production
-PyPI publication and the user pilot remain separate decisions.
+The first GitHub prerelease, PyPI and TestPyPI uploads are available. The
+three-to-five-person user pilot remains the next separate decision.
 
 ## Technical acceptance
 

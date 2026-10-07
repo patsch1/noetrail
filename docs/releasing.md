@@ -3,9 +3,10 @@
 ## Distribution decision
 
 The first public alpha is `0.10.0a1`, available from
-[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1) and
-[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). Production PyPI
-publication is still pending. The number preserves Noetrail's internal
+[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1),
+[PyPI](https://pypi.org/project/noetrail/0.10.0a1/) and
+[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). The number
+preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
 The intended channels are:
@@ -25,8 +26,8 @@ project. See the
 [official PyPI setup guide](https://docs.pypi.org/trusted-publishers/) and
 [publisher configuration](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
 
-The source repository, GitHub prerelease and TestPyPI upload have been
-approved and published. The first production PyPI upload remains an explicit
+The source repository, GitHub prerelease, PyPI and TestPyPI uploads have been
+approved and published. Every future production PyPI upload remains an explicit
 publication gate; the `pypi` reviewer must approve the tested tag artifacts.
 
 ### One-time setup before the first upload
@@ -118,11 +119,9 @@ uploaded to PyPI, which accepts only distributions.
 
 ## Documentation that changes when a switch is thrown
 
-Several pages state, correctly, that something has not happened yet. Each
-becomes false at the moment it does, and the two moments are separate: making
-the repository public does not create the PyPI project, and uploading the
-project does not make the repository public. Grouped so each group can be done
-in one pass, with the text to search for:
+Source publication and package publication happened separately. The following
+statements now record both completed steps. Review them together when the
+release channel or current alpha changes:
 
 **When the repository becomes public**
 
@@ -132,17 +131,17 @@ in one pass, with the text to search for:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**When `0.10.0a1` is on production PyPI**
+**Published `0.10.0a1` on production PyPI**
 
-| Page | Says today |
+| Page | Updated package-publication statement |
 | --- | --- |
-| `README.md` | "That line is not live yet" |
-| `docs/quickstart.md` | "Production PyPI publication is still pending" |
-| `docs/installation.md` | "Today, install from a checkout" |
-| `docs/integrations/mcp-clients.md` | "From a checkout today" |
+| `README.md` | "available on PyPI, GitHub and TestPyPI" |
+| `docs/quickstart.md` | "`0.10.0a1` is on PyPI" |
+| `docs/installation.md` | "The alpha is on PyPI" |
+| `docs/integrations/mcp-clients.md` | "The alpha is on PyPI" |
 
 The `<!-- docs-check: skip -->` markers above those `uvx` blocks are
-deliberately *not* on this list. They state that `uvx` and `pipx run` install
+deliberately *not* on this list. They state that `uvx` installs
 over the network, which stays true after the upload, so the blocks stay opted
 out for a reason that does not expire.
 

@@ -8,7 +8,7 @@ and shipped is in [the decision log](docs/internal/decision-log.md).
 ## Where it stands
 
 `0.10.0a1` is the first public alpha, available as a GitHub prerelease and on
-TestPyPI. Production PyPI publication still requires approval. The vault format is at core
+PyPI and TestPyPI. The vault format is at core
 schema 12, the CLI and the Noetrail MCP server share one validated code path,
 custom types are declarative schema packs, and the runtime has no third-party
 dependencies. Migrations are deterministic and previewable, and every release
@@ -22,11 +22,10 @@ rollback, before and after `1.0`. See
 
 ## Next
 
-**Publication.** The GitHub Release artifacts and the PyPI upload path are
-built and tested, and the workflow publishes through Trusted Publishing from a
-protected environment. The source is public, and the first GitHub prerelease
-and TestPyPI upload are available. The PyPI upload still requires an explicit
-maintainer decision. See
+**Publication is complete.** The source is public, and the first GitHub
+prerelease, PyPI and TestPyPI distributions are available. The workflow
+publishes identical CI-built artifacts through Trusted Publishing from a
+protected environment. Future uploads still require a maintainer decision. See
 [Release process](docs/releasing.md).
 
 CodeQL scans public changes through the repository workflow. A successful

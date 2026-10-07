@@ -22,28 +22,32 @@ in [Connecting an MCP client](integrations/mcp-clients.md).
 ## Install: single user, own machine
 
 The alpha is available from the
-[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1)
+[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1),
+[PyPI](https://pypi.org/project/noetrail/0.10.0a1/),
 and [TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). Install it in a
 fresh virtual environment:
 
-<!-- docs-check: skip - installs from TestPyPI over the network -->
+<!-- docs-check: skip - installs from PyPI over the network -->
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install --index-url https://test.pypi.org/simple/ --no-deps noetrail==0.10.0a1
+.venv/bin/python -m pip install noetrail==0.10.0a1
 .venv/bin/noetrail quickstart
 ```
 
-Production PyPI publication is still pending. After that approval, the default
-package-index command will work:
+The alpha is on PyPI. Pin its version explicitly when running with `uvx`:
 
-<!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
+<!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx noetrail quickstart          # or: pipx run noetrail quickstart
+uvx --from 'noetrail==0.10.0a1' noetrail quickstart
 ```
 
-Today, install from a checkout as an alternative and run the same command:
+For the separate TestPyPI channel, use
+`--index-url https://test.pypi.org/simple/ --no-deps` with the pinned pip
+requirement above. Both indexes contain the same CI-built distributions.
+
+Alternatively, install from a checkout and run the same command:
 
 <!-- docs-check: skip - installs from the network -->
 

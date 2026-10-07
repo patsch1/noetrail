@@ -8,16 +8,15 @@ It uses only synthetic data and never touches a real vault.
 If all you want is a working instance and the configuration line for an MCP
 client, this is the whole thing:
 
-<!-- docs-check: skip - uvx and pipx run install from a package index over the network -->
+<!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx noetrail quickstart          # or: pipx run noetrail quickstart
+uvx --from 'noetrail==0.10.0a1' noetrail quickstart
 ```
 
-`0.10.0a1` is on TestPyPI. Production PyPI publication is still pending, so the
-default-index command above starts working after that separate approval. See
-[installation](installation.md#install-single-user-own-machine) for the tested
-TestPyPI command. From a checkout the same command is
+`0.10.0a1` is on PyPI. The command pins the alpha version explicitly. See
+[installation](installation.md#install-single-user-own-machine) for
+virtual-environment and TestPyPI alternatives. From a checkout the same command is
 `.venv/bin/noetrail quickstart`, which is what the rest of this page uses. It
 creates `~/noetrail/data` and `~/noetrail/config` (override with `--path`),
 writes three sample entries, and prints the MCP server block.
