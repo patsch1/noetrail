@@ -14,8 +14,10 @@ client, this is the whole thing:
 uvx noetrail quickstart          # or: pipx run noetrail quickstart
 ```
 
-`0.10.0a1` is not on a public package index yet, so that line starts working
-with the first upload. From a checkout the same command is
+`0.10.0a1` is on TestPyPI. Production PyPI publication is still pending, so the
+default-index command above starts working after that separate approval. See
+[installation](installation.md#install-single-user-own-machine) for the tested
+TestPyPI command. From a checkout the same command is
 `.venv/bin/noetrail quickstart`, which is what the rest of this page uses. It
 creates `~/noetrail/data` and `~/noetrail/config` (override with `--path`),
 writes three sample entries, and prints the MCP server block.

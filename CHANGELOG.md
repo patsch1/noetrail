@@ -6,7 +6,13 @@ All notable user-visible changes will be documented here. The project follows
 
 ## 0.10.0a1 - Unreleased
 
+GitHub prerelease and TestPyPI published on 2026-10-07; production PyPI
+publication remains pending maintainer approval.
+
 ### Added
+
+- published GitHub alpha artifacts and TestPyPI installation instructions,
+  distinguishing the tested alpha channel from the pending PyPI upload;
 
 - public CodeQL analysis with reviewed synthetic-secret test findings and
   clearer test assertions, parser exits and HTTP shutdown/logging intent;
