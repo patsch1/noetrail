@@ -8,62 +8,28 @@
 [![Coverage gate 80%](https://img.shields.io/badge/coverage%20gate-80%25-brightgreen)][coverage-tool]
 [![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)][pyproject]
 
-Noetrail is a local-first, agent-friendly knowledge vault. Notes remain
-readable Markdown files; AI agents use a narrow CLI or MCP interface to capture,
-search, relate, review, and safely update them.
+Noetrail is a local-first Markdown knowledge vault for people and AI agents.
+Capture notes, link related entries, and retrieve stored knowledge through a
+Python CLI or a bounded Model Context Protocol (MCP) server. Markdown files
+remain the source of truth and can be read without Noetrail.
 
-**Built by AI agents.** Noetrail is vibe-coded. Its code, tests, and
-documentation were written by AI coding agents directed by one human
-maintainer, who reviews the result and is accountable for what ships. Six CI
-gates stand in for a person typing every line.
-[How this project was built][ai-authorship] says what that does and
-does not mean — worth reading before you point this at your private notes.
+**Status:** `0.10.0a1` is a public alpha, available on
+[PyPI](https://pypi.org/project/noetrail/0.10.0a1/),
+[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1), and
+[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/).
+Python 3.11 or newer is required. The Python runtime has no third-party
+package dependencies. CLI and MCP interfaces may change during the alpha;
+see [versioning and compatibility][versioning].
 
-> **Private by design:** source control contains the program, schemas, skills,
-> synthetic examples, and documentation. A real `vault/`, `trash/`,
-> `imports/raw/`, and `imports/work/` belong on private storage and in its
-> authorized backups, never in Git.
+**AI-developed, maintainer-directed.** The code, tests, and documentation were
+written by AI coding agents under one human maintainer's direction. The
+maintainer is responsible for what ships. Automated checks support review;
+they do not prove correctness. [Development process][ai-authorship].
 
-Noetrail currently supports:
+## Get started
 
-- thoughts, notes, memories, people, projects, media, places, products, and
-  recipes;
-- reusable experiences such as tastings, visits, meals, and cooking events;
-- reading queues and enriched bookmarks with personal notes kept separate from
-  fetched metadata;
-- private, content-addressed image attachments;
-- search that runs a literal substring match and an Okapi BM25 ranking
-  together and returns the union, over an optional derived index that is
-  verified against the files before every use and can be deleted at any time;
-- a vector sidecar interface for an embedding provider you run yourself, with
-  no model, no dependency, and no network call added to Noetrail;
-- stable IDs, typed relations, optimistic revisions, and a shared vault lock;
-- searchable aliases for explicitly grounded alternative names;
-- an inbox/review workflow and reversible trash;
-- declarative saved views for recurring filtered lists;
-- declarative, non-executable schema packs for user-defined types;
-- idempotent local Markdown imports with retained provenance;
-- a dependency-free Python CLI, a narrow Noetrail MCP server, and an isolated
-  SSRF-hardened bookmark metadata fetcher;
-- host-neutral agent workflows plus an optional hardened ZeroClaw overlay.
-
-## One agent turn
-
-![Recorded terminal session: a bounded search, a capture that lands in the review inbox, the review queue, and a validation run][demo-recording]
-
-This is a recording, not an illustration. [`demo/session.sh`][demo-session]
-runs those four commands against a disposable copy of the synthetic demo vault;
-`tools/render_terminal_svg.py` executes the script and draws whatever came
-back. The plain-text transcript is
-[`docs/assets/demo.txt`][demo-transcript], and the test suite re-runs the
-session and fails if the recording no longer matches the program's output.
-
-## Start with one command
-
-`noetrail quickstart` creates an instance, writes a few sample entries, and
-prints the exact MCP server block your client wants. Nothing else to decide.
-
-**Run the published alpha** — no checkout, no virtual environment:
+With [uv](https://docs.astral.sh/uv/getting-started/installation/) installed,
+run the published alpha without a source checkout:
 
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
@@ -71,13 +37,14 @@ prints the exact MCP server block your client wants. Nothing else to decide.
 uvx --from 'noetrail==0.10.0a1' noetrail quickstart
 ```
 
-`0.10.0a1` is available on [PyPI](https://pypi.org/project/noetrail/0.10.0a1/),
-[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a1), and
-[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a1/). The command pins
-the alpha version explicitly. See
-[installation](https://github.com/patsch1/noetrail/blob/main/docs/installation.md#install-single-user-own-machine)
-for virtual-environment and TestPyPI alternatives. A checkout also works.
-Python 3.11 or newer, no third-party dependencies:
+`quickstart` creates `~/noetrail/data` and `~/noetrail/config`, adds three
+sample entries, and prints an MCP configuration with absolute data and configuration paths. Use
+`--path` to choose another instance directory. Repeating the command does not
+duplicate the samples.
+
+For a virtual environment, TestPyPI, or a server installation, see
+[Installation and lifecycle][installation]. To try the source checkout with
+disposable data:
 
 <!-- docs-check: skip - installs from the network; the doc runner substitutes a local entry point -->
 
@@ -88,216 +55,163 @@ python3 -m venv .venv
 .venv/bin/python -m pip install .
 ```
 
-Then the same single command:
-
 ```sh
 DEMO_ROOT="$(mktemp -d)"
-
 .venv/bin/noetrail quickstart --path "$DEMO_ROOT"
-```
-
-It prints the two roots it created, the sample entries it wrote, and the
-client configuration below. Run `search`, `review`, or `inventory` against it
-straight away:
-
-```sh
 .venv/bin/noetrail \
   --data-root "$DEMO_ROOT/data" \
   --config-root "$DEMO_ROOT/config" \
   doctor
 ```
 
-The longer walkthrough adds a custom schema pack and two imports:
-[Five-minute quickstart][quickstart].
+The [five-minute quickstart][quickstart] walks through capture, search, custom
+types, and imports. Follow it with synthetic data before using personal notes.
 
-## Connecting an agent
+## Connect an AI client
 
-Noetrail's primary agent boundary is a stdio MCP server, and `quickstart`
-prints this block filled in with your own absolute paths. Any MCP-capable
-client takes it:
+Noetrail exposes a stdio MCP server. `quickstart` prints the absolute data and
+configuration paths. For the `uvx` method above, clients that accept a
+`mcpServers` configuration can launch the server through `uvx`:
 
 ```json
 {
   "mcpServers": {
     "noetrail": {
-      "command": "noetrail-mcp",
-      "args": ["--data-root", "/absolute/data", "--config-root", "/absolute/config"]
+      "command": "uvx",
+      "args": [
+        "--from", "noetrail==0.10.0a1", "noetrail-mcp",
+        "--data-root", "/absolute/data", "--config-root", "/absolute/config"
+      ]
     }
   }
 }
 ```
 
-See [Connecting an MCP client][mcp-clients] for the tool
-surface, concurrency rules, and attachment handling.
+Replace the example roots with the paths printed by `quickstart`. If your
+client cannot resolve `uvx`, use its absolute path (`command -v uvx`). For a
+virtual-environment installation, use that environment's absolute
+`noetrail-mcp` path with the generated arguments. Configuration locations and
+protocol versions depend on the host; see [Connecting an MCP client][mcp-clients].
 
-## Agent-facing examples
+A connected agent can capture a note, find related entries, save an article to
+a reading queue, or retrieve an attached image. The vault server exposes typed
+operations instead of a generic shell or filesystem API. Bookmark metadata is
+fetched through a separate server with no vault access.
 
-A connected agent can turn ordinary requests into validated operations:
+## What you can store and do
 
-- “Remember this thought and leave it in my review inbox.”
-- “Save this article as unread.”
-- “Which drinks are still on my wishlist?”
-- “I visited this bar yesterday, rated it four stars, and attached two photos.”
-- “Show unresolved relationships and bookmarks without a personal note.”
+- **Structured knowledge:** notes, thoughts, memories, people, projects,
+  media, places, products, recipes, bookmarks, and experiences such as visits
+  or tastings. Entries have stable IDs, typed relations, tags, and timestamps.
+- **Capture and review:** an inbox for unreviewed entries, revision checks for
+  updates, private image attachments, and whole-entry trash and restore.
+- **Retrieval:** literal and BM25 search, grounded alternative names, bounded
+  multi-entry retrieval, and saved filtered views. An optional derived index
+  can be rebuilt from the Markdown files.
+- **Custom types:** declarative schema packs define attributes and validation
+  without executable hooks. See [Schema packs][schema-packs] and
+  [Saved views][saved-views].
+- **Imports:** preview and import plain Markdown, Obsidian, or Basic Memory
+  exports with provenance and duplicate handling. See [Importing notes][importing].
+- **Optional reranking:** externally supplied vectors can rerank lexical
+  candidates. Noetrail ships no embedding model or provider connection.
+  See [Embeddings][embeddings].
 
-The agent never needs a generic shell or arbitrary filesystem access. It uses
-typed operations such as `inventory`, `capture`, `search`, `retrieve`,
-`run_view`, `update`, `add_attachment`, `trash`, and `restore`. Search returns compact, stably
-ordered pages with an explicit total and continuation offset, so an agent can
-answer large-list questions without silently truncating them or flooding its
-model context.
+## Recorded example
 
-## Architecture
+![Recorded terminal session: a bounded search, a capture that lands in the review inbox, the review queue, and a validation run][demo-recording]
+
+The recording runs [`demo/session.sh`][demo-session] against a disposable
+synthetic vault: search, capture, review, and validation. The test suite
+checks the [transcript][demo-transcript] against the program's output.
+
+## Data, privacy, and limits
+
+Personal entries, attachments, imports, and trash belong in the private data
+root and its backups. Program files, schemas, skills, and synthetic examples
+belong in source control. Instance configuration and local schema packs can
+live separately from both. See [Layout][layout] and [Privacy boundaries][privacy].
+
+An AI client connected to the vault can read its entries. A cloud-backed
+client may send retrieved content to its model provider; local storage alone
+does not prevent that. Sensitivity labels are metadata, not access controls.
+Choose a client and provider you trust with the connected vault.
+
+Search is primarily lexical. A paraphrase, typo, or translation may need query
+reformulation, and an empty result is not proof that a fact is absent. Vector
+reranking does not add entries outside the lexical candidates. See
+[Limits and scaling][limits] and [Retrieval evaluation][retrieval-evaluation].
+
+Back up the complete data and configuration roots before upgrades. On-disk
+migrations require an explicit preview and apply; restoring a backup is the
+rollback path after migration. See [Backup and restore][backup-restore].
+
+## Architecture and deployment
 
 ```mermaid
 flowchart LR
-    U["User"] --> A["AI agent or CLI"]
+    U["User"] --> C["CLI"]
+    U --> A["AI client"]
     A --> M["Noetrail MCP"]
-    M --> C["Validated core"]
+    M --> C
     C --> V[("Private Markdown vault")]
-    V --> B[("Versioned backups")]
     P["Declarative schema packs"] --> C
     W["Isolated bookmark fetcher"] -->|"allowlisted metadata"| A
 ```
 
-Markdown is the source of truth. The core owns IDs, timestamps, revisions,
-locking, lifecycle, attachments, provenance, trash, and migrations. Schema
-packs define typed attributes and static body structure without Python, shell,
-network calls, or executable hooks.
-
-Program resources, instance configuration, and personal data can be mounted
-separately:
+The CLI implements vault rules; MCP mutations invoke that same implementation.
+Program resources, instance configuration, and data can use separate paths:
 
 ```text
-/opt/noetrail/          installed read-only program and built-ins
+/opt/noetrail/          program and built-ins
 /etc/noetrail/          instance configuration and local schema packs
-/srv/noetrail-data/     private vault, trash, imports, locks, attachments
+/srv/noetrail-data/     vault, trash, imports, locks, attachments
 ```
 
-The older combined `--root` layout remains a compatibility surface for
-existing deployments.
+Run Noetrail locally or install it on a shared host. The optional
+[ZeroClaw deployment][zeroclaw-setup] adds a constrained knowledge agent and
+an isolated web-fetch process; it is one integration, not a requirement.
+The [security guide][zeroclaw-security] describes that deployment's controls.
 
-## Declarative custom types
+## Development and verification
 
-Local schema packs live below `<config-root>/packs/`. For example, the
-synthetic demo defines `travel/destination` with required `country`, an enum
-visit state, and searchable highlights. The same registry drives CLI
-validation, search filters, generated JSON Schema, and MCP input schemas.
+Install the development tools described in [Contributing][contributing].
+Without a local maintainer vault, run the six contributor gates listed there.
+With that vault configured:
 
-See [Declarative schema packs][schema-packs] and the
-[synthetic demo pack][travel-pack].
-
-Recurring filtered lists can be named in a data-only `views.yaml`; see
-[Declarative saved views][saved-views]. Pack authors can scaffold an inert
-candidate with `noetrail schema init` and validate it before installation with
-`noetrail schema validate-pack`.
-
-## Bringing an existing vault
-
-Copy the vault below `<data-root>/imports/raw/`, preview the plan, then apply
-it explicitly. Three importers exist:
-
-<!-- docs-check: skip - illustrative deployment paths, not a runnable example -->
-
-```sh
-noetrail --data-root /srv/noetrail-data --config-root /etc/noetrail \
-  import obsidian --source my-obsidian-vault
-
-noetrail --data-root /srv/noetrail-data --config-root /etc/noetrail \
-  import obsidian --source my-obsidian-vault --apply
-```
-
-- `import markdown` — plain UTF-8 Markdown files, no link or tag handling.
-- `import obsidian` — wikilinks become typed relations, embedded images
-  become content-addressed attachments, frontmatter and inline `#tags` become
-  entry tags, and `.obsidian/`, canvas files, Dataview blocks, and Templater
-  syntax are reported rather than silently swallowed.
-- `import basic-memory` — frontmatter, `## Observations`, and typed
-  `## Relations` lines.
-
-All three are dry-run by default, derive stable entry IDs, record a content
-hash so an unchanged repeat creates nothing, and roll back completely if a
-write fails. What could not be converted is listed in the report. See
-[Importing notes][importing].
-
-## Ways to run it
-
-Noetrail is one Python package with no runtime dependencies, so how it runs is
-your choice rather than a prerequisite:
-
-- **On your machine.** `noetrail quickstart`, then point a desktop MCP client
-  at the printed configuration. This is the default and needs nothing else.
-- **On a server you already have.** Install the wheel into a virtual
-  environment, keep data, instance configuration, and program on separate
-  paths, and back up the data root. See
-  [Installation and lifecycle][installation].
-- **In a hardened container with a chat channel.** One supported option, not a
-  requirement. The knowledge agent gets only selected narrow MCP tools and no
-  shell, generic filesystem, web, Kubernetes, secret, or
-  backup access; untrusted web pages are processed by a separate fetcher
-  without a vault mount. See [ZeroClaw setup][zeroclaw-setup]
-  and [ZeroClaw security][zeroclaw-security].
-
-## Development and release checks
-
-<!-- docs-check: skip - `make check` is the suite that runs this check -->
+<!-- docs-check: skip - make check is the suite that runs this check -->
 
 ```sh
 make check
 make release-check
 ```
 
-`make check` runs the synthetic test suite, validates the local development
-vault when present, scans for common secrets, and verifies the Git/private-data
-boundary. `make release-check` builds the source distribution and runs the
-suite inside the unpacked archive, then builds a wheel, installs it in a clean
-virtual environment, migrates a synthetic schema-8 vault to schema 12, validates
-it, restores the pre-migration backup, and validates that rollback boundary.
+Changes pass lint, type checking, synthetic tests, coverage, secret scanning,
+and the Git/private-data boundary check. `make check` also validates a local
+maintainer vault; it requires one. `make release-check` tests an unpacked source
+distribution and a freshly installed wheel, including synthetic migration and
+restore acceptance. CodeQL runs alongside CI on public changes.
 
-Noetrail `0.10.0a1` is the first public alpha, available on PyPI, GitHub and TestPyPI.
-The release workflow
-builds the wheel and source distribution, rebuilds them and compares, attaches
-a build-provenance attestation and a CycloneDX bill of materials, and uploads
-to PyPI through Trusted Publishing from a protected environment. The source
-repository is public. Each future package upload requires maintainer approval. See
-[Release process][releasing], [versioning][versioning], and
+Noetrail `0.10.0a1` is available on PyPI, GitHub and TestPyPI. Release artifacts
+include checksums, build provenance, and a CycloneDX bill of materials.
+The source repository is public. Each future package upload requires
+maintainer approval. See [Release process][releasing] and
 [current release notes][release-notes].
 
-## Documentation
+## Documentation and project
 
-- [Five-minute quickstart][quickstart]
-- [Architecture][architecture]
-- [Connecting an MCP client][mcp-clients]
-- [Installation and lifecycle][installation]
-- [Application, configuration, and data layout][layout]
-- [Declarative schema packs][schema-packs]
-- [Importing notes][importing]
-- [Limits and scaling][limits] — measured search, index, and retrieval
-  numbers
-- [Embeddings][embeddings] — the vector sidecar interface, and why no
-  provider ships with it
-- [Privacy boundaries][privacy]
-- [Backup and restore][backup-restore]
-- [Release process][releasing]
-- [Architecture decision records][adr]
-- [How this project was built][ai-authorship]
-- [The Noetrail mark][logo-note] — which logo file to use
-  where, and why the shape is what it is
-
-## Project
-
-- [How this project was built][ai-authorship] — written by AI agents,
-  and what that means for a reader
-- [Roadmap][roadmap] — what comes after `0.10`, and what is deliberately out
-  of scope
-- [Contributing][contributing] and [AGENTS.md][agents] — the six gates a
-  change has to pass, for humans and for agents
-- [Code of conduct][code-of-conduct]
-- [Security policy][security] — private reporting, response times, and how
-  release artifacts can be verified
-- [Support][support] — what this project does and does not support
-- [Decision log][decision-log] — the retrospective record of
-  how the project got here
+- [Five-minute quickstart][quickstart] · [Installation][installation] ·
+  [Connecting an MCP client][mcp-clients]
+- [Architecture][architecture] · [Layout][layout] · [Privacy][privacy] ·
+  [Backup and restore][backup-restore]
+- [Schema packs][schema-packs] · [Saved views][saved-views] ·
+  [Importing notes][importing] · [Search limits][limits]
+- [Roadmap][roadmap] · [Decision log][decision-log] ·
+  [Architecture decision records][adr]
+- [Contributing][contributing] · [AGENTS.md][agents] ·
+  [Development process][ai-authorship]
+- [Support][support] · [Security policy][security] ·
+  [Code of conduct][code-of-conduct]
 
 Noetrail is licensed under the [Apache License 2.0][license]. Personal vault
 content is separate data and is not relicensed by this repository.
@@ -336,3 +250,4 @@ content is separate data and is not relicensed by this repository.
 [versioning]: https://github.com/patsch1/noetrail/blob/main/docs/versioning.md
 [zeroclaw-security]: https://github.com/patsch1/noetrail/blob/main/docs/integrations/zeroclaw-security.md
 [zeroclaw-setup]: https://github.com/patsch1/noetrail/blob/main/docs/integrations/zeroclaw-setup.md
+[retrieval-evaluation]: https://github.com/patsch1/noetrail/blob/main/docs/retrieval-evaluation.md

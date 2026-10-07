@@ -253,11 +253,12 @@ class AiAuthorshipDisclosureTest(unittest.TestCase):
 
     def test_the_page_says_what_it_does_and_does_not_change(self) -> None:
         page = (REPOSITORY_ROOT / self.PAGE).read_text(encoding="utf-8")
-        self.assertIn("vibe-coded", page)
+        self.assertIn("written by AI coding agents", re.sub(r"\s+", " ", page))
         # A disclosure that only confesses is half of one. These are the parts
         # that let a reader act on it.
         self.assertIn("Co-Authored-By", page)
-        self.assertIn("## What it does not mean", page)
+        self.assertIn("## Accountability and reports", page)
+        self.assertIn("not a guarantee of correctness", page)
         for gate in ("ruff", "mypy", "check_git_boundary.py"):
             self.assertIn(gate, page)
 
@@ -265,15 +266,15 @@ class AiAuthorshipDisclosureTest(unittest.TestCase):
         link = "docs/ai-authorship.md"
         for name in ("README.md", "CONTRIBUTING.md", "SECURITY.md"):
             document = (REPOSITORY_ROOT / name).read_text(encoding="utf-8")
-            self.assertIn("vibe-coded", document, name)
+            self.assertIn("AI coding agents", re.sub(r"\s+", " ", document), name)
             self.assertIn(link, document, name)
 
     def test_the_readme_states_it_before_the_feature_list(self) -> None:
         readme = (REPOSITORY_ROOT / "README.md").read_text(encoding="utf-8")
         self.assertLess(
-            readme.index("vibe-coded"),
-            readme.index("Noetrail currently supports:"),
-            "the disclosure has slipped below the feature list",
+            readme.index("AI-developed, maintainer-directed"),
+            readme.index("## Get started"),
+            "the disclosure has slipped below the first installation step",
         )
 
 

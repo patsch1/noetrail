@@ -66,11 +66,11 @@ These are decisions, not gaps. Each would change what the project is.
   boundary that keeps an installed pack from being a code-execution vector.
 - **Built-in vault encryption** beyond the documented filesystem and backup
   controls.
-- **A bundled embedding provider.** It would cost either a large native
-  dependency, or executable code in a pack, or the text of a private vault
-  going to a third party. Noetrail defines a vector sidecar file that a
-  provider you run writes, and reranks lexical candidates against it; it
-  computes no embeddings itself. See [Embeddings](docs/embeddings.md).
+- **A bundled embedding provider.** Provider integrations would add runtime
+  dependencies and require explicit decisions about how vault content is
+  processed. Noetrail instead defines a vector sidecar that an external
+  provider writes, and reranks lexical candidates against it; it computes
+  no embeddings itself. See [Embeddings](docs/embeddings.md).
 - **Semantic search as the source of truth.** Markdown stays authoritative, and
   a ranking that depends on a model version cannot be reproduced by a reader
   holding only the files.
@@ -80,6 +80,6 @@ These are decisions, not gaps. Each would change what the project is.
 ## Influencing it
 
 Open an issue with the feature form. A proposal that names the problem, the
-smallest change that solves it, and what it would cost gets a real answer;
-a wish list gets a slower one. [CONTRIBUTING.md](CONTRIBUTING.md) describes the
+smallest change that solves it, and the expected tradeoffs helps the maintainer
+evaluate scope and priority. [CONTRIBUTING.md](CONTRIBUTING.md) describes the
 gates a change has to pass.

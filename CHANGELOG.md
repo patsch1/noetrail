@@ -4,7 +4,15 @@ All notable user-visible changes will be documented here. The project follows
 [Semantic Versioning](https://semver.org/) with additional pre-`1.0` rules in
 [the versioning policy](docs/versioning.md).
 
-## 0.10.0a1 - Unreleased
+## Unreleased
+
+- clarify the public README, installation scope, AI authorship, retrieval
+  limits, and privacy boundaries;
+- add a synthetic alpha-pilot kit and an anonymous observation template;
+- accept a validated release date in the release-consistency check while
+  rejecting ambiguous headings and invalid dates.
+
+## 0.10.0a1 - 2026-10-07
 
 GitHub prerelease, PyPI and TestPyPI published on 2026-10-07 after maintainer
 approval. The package remains an alpha.

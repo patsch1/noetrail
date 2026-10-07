@@ -5,29 +5,23 @@ would install one, and makes no network call for one. What it defines is the
 shape of a file that a provider you run writes, and a reranking step that reads
 it.
 
-This page is the reference for that file. The reasoning behind refusing to ship
-a provider is in [ADR 0005](adr/0005-lexical-bm25-index.md); the short version
-is three properties that a bundled provider would each end:
+This page defines the sidecar format. Noetrail keeps provider selection and
+execution outside the vault runtime for three reasons:
 
-- **Zero dependency.** Every usable embedding library is a large native
-  dependency with its own supply chain. Vendoring one ends the claim that a
-  vault needs the standard library and nothing else — permanently, and for a
-  feature most vaults will not switch on.
-- **Packs stay data.** The natural place for a provider is a schema pack, and
-  [ADR 0001](adr/0001-core-and-schema-packs.md) makes packs declarative so that
-  installing one cannot run code. That property is worth more than the
-  convenience of naming a callable in YAML.
-- **The vault does not leave the machine.** A hosted provider means the text of
-  every entry is sent to a third party, decided once by a configuration key
-  rather than by you, per query. The bookmark fetcher is a separate process
-  without vault access for exactly this reason.
+- **Dependency boundary.** An embedding provider introduces its own libraries,
+  model files, or service requirements. The core Python package stays usable
+  with the standard library alone.
+- **Data-only packs.** Schema packs define attributes and validation; installing
+  a pack cannot execute a provider or other code. See
+  [ADR 0001](adr/0001-core-and-schema-packs.md).
+- **Explicit data handling.** You choose whether and where a provider processes
+  vault text. A local-first vault does not automatically make a cloud-backed
+  provider or AI client private. See [Privacy](privacy.md).
 
-There is a fourth reason that applies to the ranking itself and does not go
-away by choosing a better provider: a vector ranking depends on a model
-version, so the same query returns different entries after an upgrade, and a
-reader holding only the Markdown cannot reproduce it. Keeping the vectors an
-external artefact you supply explicitly is what preserves the property that
-Noetrail's own answer — BM25 over the files — is reproducible without them.
+Vector ranking can change with a model version. Supplying vectors explicitly
+keeps that dependency separate from reproducible lexical retrieval over the
+Markdown files. The design rationale is in
+[ADR 0005](adr/0005-lexical-bm25-index.md).
 
 ## What the interface can and cannot do
 
@@ -36,8 +30,8 @@ Vectors **reorder** the entries BM25 already matched. They never add one.
 That is a real limit, and it is deliberate. It means semantic reranking cannot
 surface an entry that shares no word with your query, and it means every result
 is still explainable by words that are in the file. If you need recall beyond
-the lexical candidates, widen the query or lower `--bm25-b`; do not expect the
-sidecar to do it.
+the lexical candidates, reformulate or broaden the query. The `--bm25-b` parameter changes length
+normalization; it does not supply missing semantic matches.
 
 ## Sidecar format
 

@@ -24,11 +24,10 @@ attachment, export, API token, Kubernetes Secret, private key, or password.
 Noetrail is maintained by one person. The commitments below are what a single
 maintainer can actually keep; they are deliberately not a commercial SLA.
 
-That person directs AI coding agents rather than typing the code: this project
-is vibe-coded, and you should weigh a report about it accordingly. It does not
-move the responsibility anywhere — the commitments below are a human's, and a
-finding is judged on the code, not on who or what wrote it. See
-[How this project was built](docs/ai-authorship.md).
+The code, tests, and documentation were written by AI coding agents under
+maintainer direction. The maintainer remains responsible for releases and
+security reports. Findings are assessed against the implementation and their
+impact. See [Development process and AI authorship](docs/ai-authorship.md).
 
 | Step | Target |
 | --- | --- |

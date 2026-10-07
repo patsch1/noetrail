@@ -5,10 +5,17 @@ three to five volunteers using disposable synthetic data. Recruitment, release
 publication and access to participants' private vaults are maintainer decisions;
 this document sends no invitations and grants no access.
 
-## Session (30–45 minutes)
+## Materials and status
 
-1. Follow the checkout installation and quickstart without coaching. Record
-   time until the first successful MCP search, OS, Python and client version.
+The [synthetic pilot kit](../demo/pilot/README.md) provides repeatable fixtures,
+a participant task sheet and an anonymous observation template. Automated
+fixture checks are preparation evidence; they are not human usability results.
+The pilot is ready to schedule once volunteers and their clients are selected.
+
+## Session (allow 45–60 minutes)
+
+1. Follow the published-alpha installation and quickstart without coaching.
+   Record time until the first successful MCP search, OS, Python and client version.
 2. Capture a note, attach a synthetic image, and retrieve both from the client.
 3. Import a small synthetic Markdown/Obsidian sample twice. Explain skipped
    duplicates and inspect an unresolved relationship.
@@ -32,7 +39,8 @@ redacted observations; convert any issue into synthetic data before filing it.
 ## Exit decision
 
 Every participant should complete capture and retrieval; at least four of five
-(or all three in a three-person pilot) should finish setup without intervention.
+(all three for three participants, or all four for four participants) should
+finish setup without intervention.
 There must be no observed data loss, silent mutation conflict or fabricated
 answer to the deliberately absent fact. Every restore exercise must preserve
 the selected IDs, revisions, pack, view and attachment bytes.
