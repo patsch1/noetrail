@@ -8,6 +8,7 @@ from collections.abc import Callable
 from datetime import datetime
 import json
 from pathlib import Path
+import unicodedata
 
 from noetrail.commands.review import entry_detail
 from noetrail.constants import ENTRY_TYPES
@@ -36,6 +37,7 @@ from noetrail.search import (
     LITERAL_SCORE,
     RANK_HYBRID,
     RANK_SUBSTRING,
+    TYPO_SCORE,
     WORD_FORM_SCORE,
     MemoryTermSource,
     SearchableText,
@@ -43,6 +45,7 @@ from noetrail.search import (
     searchable_text,
     term_frequencies,
     tokenize,
+    typo_terms,
     word_form_terms,
 )
 from noetrail.store import parse_timestamp, revision_for
@@ -319,7 +322,7 @@ def _text_matches(
 
     if args.rank == RANK_SUBSTRING:
         return _substring_matches(args, query, keep)
-    terms = tokenize(args.query)
+    terms = tokenize(query)
     if not terms:
         # Tokenisation can discard a non-empty query (emoji, punctuation or
         # an oversized token). Only an actually empty query lists everything.
@@ -339,10 +342,87 @@ def _text_matches(
             if not keep(metadata):
                 continue
             text = searchable_text(metadata, body, args.registry)
-            if word_form_terms(args.query, text.haystack):
+            if word_form_terms(query, text.haystack):
                 merged.append((path, metadata, body, text, WORD_FORM_SCORE))
+        if not merged:
+            for path, metadata, body in args.index.entries:
+                check_deadline()
+                if keep(metadata) and typo_terms(query, metadata):
+                    merged.append((path, metadata, body,
+                                   searchable_text(metadata, body, args.registry),
+                                   TYPO_SCORE))
         return merged, unreadable
     return ranked
+
+
+def _queries(args: argparse.Namespace) -> list[str]:
+    variants = getattr(args, "query_variants", None) or []
+    if len(variants) > 3:
+        raise InvalidRequest("retrieve accepts at most three query variants")
+    queries = [args.query, *variants]
+    if variants:
+        seen: set[str] = set()
+        for query in queries:
+            if not query.strip() or "\x00" in query or len(query) > 2_000:
+                raise InvalidRequest(
+                    "Batch queries must be nonblank, NUL-free "
+                    "and at most 2000 characters"
+                )
+            key = unicodedata.normalize("NFKC", query).casefold().strip()
+            if key in seen:
+                raise InvalidRequest("Batch queries must be distinct")
+            seen.add(key)
+    return queries
+
+
+def _match_kind(score: float) -> str:
+    return ("typo" if score == TYPO_SCORE else
+            "word_form" if score == WORD_FORM_SCORE else "lexical")
+
+
+def _multi_text_matches(
+    args: argparse.Namespace, root: Path, queries: list[str], keep: Keep,
+) -> tuple[list[Match], list[str], dict[Path, list[dict[str, object]]],
+           dict[Path, Relevance]]:
+    """Fuse complete candidate sets, not separately capped result pages.
+
+    Raw BM25 values from different queries are not comparable. Reciprocal
+    rank fusion (k=60) rewards independently matching variants; lexical hits
+    precede word-form and typo-only candidates. Identifier ties stay stable.
+    """
+    merged: dict[Path, Match] = {}
+    support: dict[Path, list[dict[str, object]]] = {}
+    scores: dict[Path, float] = {}
+    unreadable: set[str] = set()
+    identities: dict[str, Path] = {}
+    for query in queries:
+        matches, failed = _text_matches(args, root, query.casefold(), keep)
+        unreadable.update(failed)
+        matches.sort(key=lambda item: (-item[4], str(item[1].get("id", ""))))
+        for position, match in enumerate(matches, 1):
+            check_deadline()
+            path, metadata, _body, _text, score = match
+            entry_id = str(metadata.get("id", ""))
+            if entry_id in identities and identities[entry_id] != path:
+                raise InvalidRequest(
+                    "Duplicate entry ID in batch candidates; run validate"
+                )
+            identities[entry_id] = path
+            if path not in merged or score > merged[path][4]:
+                merged[path] = match
+            evidence: dict[str, object] = {
+                "query": query, "match_kind": _match_kind(score)
+            }
+            if score == TYPO_SCORE:
+                evidence["matched_terms"] = list(typo_terms(query, metadata))
+            support.setdefault(path, []).append(evidence)
+            scores[path] = scores.get(path, 0.0) + 1.0 / (60 + position)
+    relevance = {
+        path: (2 if match[4] >= 0 else 1 if match[4] == WORD_FORM_SCORE else 0,
+               scores[path])
+        for path, match in merged.items()
+    }
+    return list(merged.values()), sorted(unreadable), support, relevance
 
 
 def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
@@ -368,6 +448,7 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
         else {}
     )
     query = args.query.casefold()
+    queries = _queries(args)
     reranking = bool(args.rerank_vectors or args.query_vector)
     if reranking and not (args.rerank_vectors and args.query_vector):
         raise InvalidRequest(
@@ -540,7 +621,14 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
     # The path, metadata and body travel next to their result so that the
     # per-entry work whose output only the returned page uses -- the revision
     # hash and the provenance summary -- can wait until the page is sliced.
-    matches, unreadable = _text_matches(args, root, query, keep)
+    query_matches: dict[Path, list[dict[str, object]]] = {}
+    fused: dict[Path, Relevance] = {}
+    if len(queries) > 1:
+        matches, unreadable, query_matches, fused = _multi_text_matches(
+            args, root, queries, keep
+        )
+    else:
+        matches, unreadable = _text_matches(args, root, query, keep)
     results: list[tuple[Path, dict[str, object], str, dict[str, object], float]] = []
     for path, metadata, body, text, score in matches:
         check_deadline()
@@ -592,6 +680,18 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
         }
         if score == WORD_FORM_SCORE:
             result["match_kind"] = "word_form"
+        elif score == TYPO_SCORE:
+            result["match_kind"] = "typo"
+            result["matched_terms"] = list(typo_terms(args.query, metadata))
+        if path in query_matches:
+            result["query_matches"] = query_matches[path]
+            if score == TYPO_SCORE:
+                supported: set[str] = set()
+                for evidence in query_matches[path]:
+                    observed = evidence.get("matched_terms")
+                    if isinstance(observed, list):
+                        supported.update(str(term) for term in observed)
+                result["matched_terms"] = sorted(supported)
         # Absent for every entry without one, which is nearly all of them: a
         # result page must not grow a key per item to report a zero.
         if not_in_force:
@@ -608,7 +708,7 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
     if (
         resolved_sort == "auto"
         and args.rank != RANK_SUBSTRING
-        and tokenize(args.query)
+        and any(tokenize(value) for value in queries)
     ):
         resolved_sort = "relevance"
     elif resolved_sort == "auto" and (
@@ -632,7 +732,7 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
         )
 
     relevance: dict[int, Relevance] = {
-        position: (NOT_RERANKED, item[4])
+        position: fused.get(item[0], (NOT_RERANKED, item[4]))
         for position, item in enumerate(results)
     }
     if reranking:
@@ -699,7 +799,9 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
                 word_form_terms(
                     args.query, searchable_text(metadata, body, args.registry).haystack
                 )
-                if result.get("match_kind") == "word_form" else ()
+                if result.get("match_kind") == "word_form" else
+                typo_terms(args.query, metadata)
+                if result.get("match_kind") == "typo" else ()
             )
             result["match_evidence"] = match_evidence(
                 metadata, body, args.registry, args.query, args.rank,
@@ -722,12 +824,14 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
     # with a type filter, so an ordinary search pays nothing for it.
     without_type_filter: dict[str, object] | None = None
     if args.type and total == 0:
-        broadened, _ = _text_matches(
-            args,
-            root,
-            query,
-            lambda metadata: keep(metadata, restrict_type=False),
-        )
+        def broadened_keep(metadata: dict[str, object]) -> bool:
+            return keep(metadata, restrict_type=False)
+        if len(queries) > 1:
+            broadened, _, _, _ = _multi_text_matches(
+                args, root, queries, broadened_keep
+            )
+        else:
+            broadened, _ = _text_matches(args, root, query, broadened_keep)
         if broadened:
             by_type: dict[str, int] = {}
             for _path, metadata, _body, _text, _score in broadened:
@@ -742,6 +846,8 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
     return {
         "scope": "active",
         "query": args.query,
+        **({"queries": queries, "query_fusion": "reciprocal_rank"}
+           if len(queries) > 1 else {}),
         **({"as_of": as_of_label} if as_of_label else {}),
         "sort": resolved_sort,
         "total": total,
@@ -805,8 +911,9 @@ def command_retrieve(args: argparse.Namespace, root: Path) -> int:
         full["body_chars"] = original_chars
         full["body_returned_chars"] = body_chars
         full["body_truncated"] = body_chars < original_chars
-        if "match_kind" in compact:
-            full["match_kind"] = compact["match_kind"]
+        for field in ("match_kind", "matched_terms", "query_matches"):
+            if field in compact:
+                full[field] = compact[field]
         details.append(full)
         remaining -= body_chars
         returned_chars += body_chars

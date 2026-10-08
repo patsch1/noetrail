@@ -6,6 +6,13 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- add conservative title/alias typo candidates after an empty hybrid lexical
+  and word-form search; labels and observed terms distinguish hints from evidence;
+- let CLI and MCP `retrieve` combine up to four supplied query strings with
+  reciprocal rank fusion, per-query match origins and shared result/body budgets;
+- teach the ZeroClaw knowledge prompt to batch translated or corrected variants
+  while counting each string toward its existing four-query budget.
+
 ## 0.10.0a2 - 2026-10-07
 
 Documentation release; runtime behavior and core schema 12 are unchanged.

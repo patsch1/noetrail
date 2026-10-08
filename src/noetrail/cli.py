@@ -675,7 +675,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=RANK_HYBRID,
         help=(
             "hybrid (default) returns both and ranks by BM25, with labelled "
-            "word-form candidates only when both are empty; substring "
+            "word-form or title/alias typo candidates only when both are empty; "
+            "substring "
             "matches the query literally against the searched text; bm25 "
             "tokenizes it and ranks entries containing any term"
         ),
@@ -715,6 +716,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="search and return bounded full entries in one operation",
     )
     retrieve.add_argument("query")
+    retrieve.add_argument(
+        "--query-variant",
+        dest="query_variants",
+        action="append",
+        default=[],
+        help="additional wording or translation (at most three, 2000 characters each)",
+    )
     retrieve.add_argument(
         "--type",
         help="built-in type or installed qualified pack/type ID",

@@ -103,14 +103,14 @@ a release change.
 ## Ranking modes
 
 `search` has two lexical predicates and a hybrid mode with an empty-result
-word-form fallback. They share one
+word-form and title/alias typo fallback. They share one
 definition of which fields are searched, so a field declared `searchable: true`
 behaves identically under any of them, and every structured filter, the page
 contract, and the sort options are the same.
 
 | | `--rank substring` | `--rank bm25` | `--rank hybrid` (default) |
 | --- | --- | --- | --- |
-| matches | the query as a literal substring of the searched text | entries containing at least one query token | either; bounded word forms only if both are empty |
+| matches | the query as a literal substring of the searched text | entries containing at least one query token | either; bounded word forms, then title/alias typos, only if earlier stages are empty |
 | finds `extractio` in "extraction" | yes | no | yes |
 | finds `ramen berlin` across a title and a tag | no | yes | yes |
 | default order | newest update, or newest occurrence | BM25 relevance | BM25 relevance |
@@ -137,8 +137,39 @@ are tentative, not semantic equivalents; read their content before answering.
 Queries with more than 16 unique tokens do not use this fallback. Existing
 nonempty results, filters, pagination and the two single modes are unchanged.
 The fallback costs another tokenizing scan, even with a fresh index. It does
-not change the BM25 vocabulary, add synonyms or perform general typo correction.
+not change the BM25 vocabulary or add synonyms.
 See [ADR 0008](adr/0008-word-form-fallback.md) for the tradeoff.
+
+If the word-form stage is also empty, hybrid checks **title and alias tokens
+only** for one insertion, deletion, substitution or adjacent transposition.
+Both tokens must contain 5–64 letters; numeric and hash-like tokens are excluded.
+It does not fuzzy-match bodies, tags or custom fields. Results carry
+`match_kind: typo` and up to two observed `matched_terms`; opt-in explanations
+show the actual spelling and its provenance, not an invented correction.
+They are tentative candidates, not proof that two names identify the same thing.
+This is another scan after an empty result. Nonempty lexical/word-form results
+and explicit `substring`/`bm25` modes stay unchanged.
+
+### Several query variants in one retrieval
+
+`retrieve` accepts one query and up to three `--query-variant` options; MCP uses
+`query_variants`. All four strings together share the existing limit of ten
+entries and 100,000 body characters, the type restriction and `as_of` instant.
+Each string is evaluated independently against the same read-locked vault.
+The union is deduplicated by entry ID. Duplicate IDs in different candidate
+files cause a refusal; they are not silently merged. Full candidate sets are
+fused before the shared limit is applied, with reciprocal rank fusion (`k=60`)
+and ID tie-breaking. Lexical hits precede word-form and typo-only candidates;
+raw BM25 scores from different strings are not added together.
+
+Batch strings must be nonblank, distinct after NFKC/case/edge-whitespace folding,
+NUL-free and at most 2,000 characters each. Each returned entry's `query_matches`
+records the matching strings and whether they yielded lexical, word-form or
+typo evidence. Bodies, revisions, provenance and truncation indicators retain
+their normal meaning. With no variants the single-query response stays unchanged,
+including the existing empty-query listing behavior. Noetrail does not generate
+translations or synonyms; the caller supplies them. See
+[ADR 0009](adr/0009-typo-and-query-variants.md).
 
 ## The derived BM25 index
 
@@ -289,6 +320,7 @@ this small survived both routes", not as a claim about retrieval in general —
 | one CLI or Noetrail MCP search page | 50 entries |
 | entries returned by one `retrieve` call | 10 |
 | body text returned by one `retrieve` call | 100,000 characters |
+| query strings in one `retrieve` call | 4 (original plus up to 3 variants) |
 | aliases on one entry | 64 |
 | one alias | 200 characters |
 
