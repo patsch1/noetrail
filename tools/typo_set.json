@@ -1,0 +1,34 @@
+{
+  "name": "title-typo-transfer-diagnostics",
+  "about": "Locally authored synthetic transfer cases created after fixing the one-edit rules, without retuning them. NOT an independent benchmark. Bodies and numeric/hash-like aliases are intentional absent distractors.",
+  "entries": [
+    {"key": "horn", "title": "Nebelhorn", "text": "Signal vor dem Start prüfen."},
+    {"key": "lantern", "title": "Papierlaterne", "text": "Faltung vor dem Aufbau prüfen."},
+    {"key": "route", "title": "Routenplan", "text": "Markierung vor dem Aufbruch prüfen."},
+    {"key": "station", "title": "Rundstation", "aliases": ["Beaconstation"], "text": "Ein synthetischer Standort."},
+    {"key": "greek", "title": "Αλφαβήτα", "text": "Ein synthetisches Modell."},
+    {"key": "distractor", "title": "Mischdaten", "aliases": ["123456", "abcdefab"], "text": "Dampfventil kontrollieren."}
+  ],
+  "queries": [
+    {"query": "Nebelhorm", "category": "substitution", "relevant": ["horn"]},
+    {"query": "Neebelhorn", "category": "insertion", "relevant": ["horn"]},
+    {"query": "Nebelhron", "category": "transposition", "relevant": ["horn"]},
+    {"query": "Nebelhon", "category": "deletion", "relevant": ["horn"]},
+    {"query": "Papeirlaterne", "category": "transposition", "relevant": ["lantern"]},
+    {"query": "Papielaterne", "category": "deletion", "relevant": ["lantern"]},
+    {"query": "Pepierlaterne", "category": "substitution", "relevant": ["lantern"]},
+    {"query": "Papierlatterne", "category": "insertion", "relevant": ["lantern"]},
+    {"query": "Routemplan", "category": "substitution", "relevant": ["route"]},
+    {"query": "Routneplan", "category": "transposition", "relevant": ["route"]},
+    {"query": "Rouenplan", "category": "deletion", "relevant": ["route"]},
+    {"query": "Beacomstation", "category": "alias", "relevant": ["station"]},
+    {"query": "Beaocnstation", "category": "alias", "relevant": ["station"]},
+    {"query": "Αλφαβήτο", "category": "unicode", "relevant": ["greek"]},
+    {"query": "Nebelmarm", "category": "absent", "relevant": []},
+    {"query": "Rounemplan", "category": "absent", "relevant": []},
+    {"query": "Kite", "category": "absent", "relevant": []},
+    {"query": "123457", "category": "absent", "relevant": []},
+    {"query": "Dampfventli", "category": "absent", "relevant": []},
+    {"query": "abcdexab", "category": "absent", "relevant": []}
+  ]
+}

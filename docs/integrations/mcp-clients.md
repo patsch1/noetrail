@@ -36,6 +36,20 @@ answer synthesis needs several bodies; use compact `search` for lists and
 selection. `list_views` and `run_view` expose only the bounded searches from
 the instance's declarative `views.yaml`.
 
+For alternative wording or a language change, pass `query_variants` alongside
+the original `query`, for example (unreleased source; not in PyPI 0.10.0a2):
+
+```json
+{"query": "cold proofing", "query_variants": ["Teigruhe", "Teig kalt gehen lassen"], "limit": 5}
+```
+
+This is one `retrieve` call with three independent query strings, deduplicated
+entries and one shared body budget. Noetrail does not translate automatically.
+The response adds `queries`, `query_fusion` and each entry's `query_matches`.
+The latter retains candidate labels such as `typo`; inspect the actual body
+before answering. Preserve user-supplied type and date restrictions across all
+variants. A four-query agent budget counts each string, not just each tool call.
+
 ## Protocol compatibility
 
 Noetrail supports both MCP handshake eras without changing the tool surface:

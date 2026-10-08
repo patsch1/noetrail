@@ -137,8 +137,12 @@ client may send retrieved content to its model provider; local storage alone
 does not prevent that. Sensitivity labels are metadata, not access controls.
 Choose a client and provider you trust with the connected vault.
 
-Search is primarily lexical. A paraphrase, typo, or translation may need query
-reformulation, and an empty result is not proof that a fact is absent. Vector
+Search is primarily lexical. Empty hybrid searches can offer labelled
+word-form and title/alias typo candidates. `retrieve` can combine the original
+query with up to three wordings or translations in one bounded read; the
+agent supplies those variants. Title/alias typo fallback and query variants
+are currently unreleased source features. A paraphrase or translation may still miss,
+and an empty result is not proof that a fact is absent. Vector
 reranking does not add entries outside the lexical candidates. See
 [Limits and scaling][limits] and [Retrieval evaluation][retrieval-evaluation].
 

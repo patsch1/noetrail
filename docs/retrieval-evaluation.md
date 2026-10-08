@@ -56,6 +56,37 @@ Next evaluate answer quality through the actual client, and use pilot feedback
 to choose further changes. Existing vectors only reorder lexical candidates;
 translation, broad paraphrases and general typo correction remain agent work.
 
+## Unreleased: title typos and batched variants
+
+The next conservative fallback adds one-edit **title/alias** candidates only
+after the lexical and word-form stages are empty. Rules were fixed before
+running the same 100-question diagnostic; no synonym list or language-specific
+query correction was added. Compared with `63441e4`:
+
+| Hybrid | Recall@5 | Precision | MRR@5 | Correct empty | Irrelevant results |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Word forms only | 0.427 | 0.727 | 0.420 | 24/25 | 12 |
+| With title/alias typos | 0.600 | 0.789 | 0.593 | 24/25 | 12 |
+
+Thirteen additional answerable questions find their source. Typo-category
+recall rises from 3/18 to 16/18; the two explicit lexical modes stay unchanged.
+These are single-query engine measurements, not model answer scores.
+
+Run `python3 tools/measure_questions.py --set tools/typo_set.json` for a further
+20 locally authored transfer cases created after fixing the rules, without
+retuning them. Hybrid finds 14/14 answerable title/alias cases versus 0/14
+previously; all six absent distractors stay empty. The set includes insertion,
+deletion, substitution, transposition, aliases and Unicode. It is small and
+authored by the same contributor, not an independent false-positive estimate.
+
+`retrieve` now also accepts the original query plus three supplied variants.
+Tests exercise translations, changed wording, ID deduplication, reciprocal
+rank fusion, filters, shared body limits and one deadline across the entire
+call. Each result retains its matching query origins and candidate kinds.
+Translations remain caller-supplied; vector candidate membership is unchanged.
+No new end-to-end model latency improvement is claimed from these engine and
+protocol tests. See [ADR 0009](adr/0009-typo-and-query-variants.md).
+
 ## Fresh client check
 
 On 2026-10-07 a ZeroClaw 0.8.4 client using `gpt-5.6-terra` with medium

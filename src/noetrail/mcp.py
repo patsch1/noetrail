@@ -376,7 +376,8 @@ TOOLS = [
         "both a literal match of the query and every entry containing at "
         "least one of its terms, ordered by BM25 relevance; rank=substring "
         "matches literally only; rank=bm25 ranks only. An empty hybrid search "
-        "may return tentative word-form candidates labelled match_kind=word_form; "
+        "may return tentative word-form or title/alias typo candidates labelled "
+        "match_kind=word_form or typo; "
         "verify their contents before answering. Prefer the default: "
         "a multi-word question finds nothing under substring alone. "
         "Returns one compact, stably sorted page with total, has_more, and "
@@ -446,10 +447,19 @@ TOOLS = [
         "in one bounded call. Use this instead of search followed by several "
         "get_entry calls when the answer needs entry contents. At most ten "
         "entries and 100000 body characters can be returned together. "
-        "Tentative word-form candidates retain match_kind=word_form; "
+        "query_variants adds up to three distinct wordings or translations "
+        "to query, with deduplicated entries, reciprocal-rank fusion and one "
+        "shared result/body budget. query_matches reports each matching variant. "
+        "Supply translations yourself; no automatic translation is performed. "
+        "Tentative candidates retain match_kind=word_form or typo; "
         "check that their contents actually answer the question.",
         {
             "query": string_schema(max_length=2_000),
+            "query_variants": {
+                "type": "array",
+                "maxItems": 3,
+                "items": string_schema(max_length=2_000),
+            },
             "type": string_schema(
                 max_length=20, enum=[*ENTRY_TYPES, "bookmark"]
             ),
@@ -1859,6 +1869,9 @@ class NoetrailServer:
 
         if name == "retrieve":
             command = []
+            for variant in arguments.get("query_variants", []):
+                # Equals keeps an option-like variant a value, never a CLI flag.
+                command.append(f"--query-variant={variant}")
             if "type" in arguments:
                 command.extend(["--type", str(arguments["type"])])
             if "limit" in arguments:

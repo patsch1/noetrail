@@ -68,9 +68,72 @@ LITERAL_SCORE = 0.0
 
 # A separate, explicitly labelled last resort, never mixed into lexical hits.
 WORD_FORM_SCORE = -1.0
+TYPO_SCORE = -2.0
 WORD_ENDINGS = ("e", "en", "es", "n", "s")
 MIN_FORM_LENGTH = 5
 MAX_FORM_QUERY_TERMS = 16
+
+
+def one_edit_apart(left: str, right: str) -> bool:
+    """One insertion, deletion, substitution or adjacent transposition.
+
+    Whole, bounded tokens only: no arbitrary substring similarity, distance
+    matrix, language model or learned synonyms. Equal tokens are not typos.
+    """
+    if left == right or abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) > len(right):
+        left, right = right, left
+    position = next(
+        (n for n, pair in enumerate(zip(left, right, strict=False))
+         if pair[0] != pair[1]),
+        len(left),
+    )
+    if len(left) != len(right):
+        return left[position:] == right[position + 1:]
+    if left[position + 1:] == right[position + 1:]:
+        return True
+    return (
+        position + 1 < len(left)
+        and left[position] == right[position + 1]
+        and left[position + 1] == right[position]
+        and left[position + 2:] == right[position + 2:]
+    )
+
+
+def typo_terms(query: str, metadata: dict[str, object]) -> tuple[str, ...]:
+    """Observed title/alias tokens, at most two, for a tentative fallback.
+
+    Bodies, tags, attributes, numbers, short fragments and hash-like tokens
+    cannot create fuzzy candidates. Never turn these temporary query hints
+    into stored aliases. Existing lexical and word-form hits take precedence.
+    """
+    terms = sorted(set(tokenize(query)))
+    if not terms or len(terms) > MAX_FORM_QUERY_TERMS:
+        return ()
+    names = [str(metadata.get("title", "")),
+             *(str(alias) for alias in metadata_list(metadata, "aliases"))]
+
+    def eligible(word: str) -> bool:
+        return (
+            word.isalpha() and len(word) >= MIN_FORM_LENGTH
+            and not re.fullmatch(r"[a-f]{8,}", word)
+        )
+
+    words = sorted({word for name in names for word in tokenize(name)
+                    if eligible(word)})
+    found: list[str] = []
+    for term in terms:
+        check_deadline()
+        if not eligible(term):
+            continue
+        for word in words:
+            check_deadline()
+            if one_edit_apart(term, word) and word not in found:
+                found.append(word)
+                if len(found) == 2:
+                    return tuple(found)
+    return tuple(found)
 
 
 def word_form_terms(query: str, text: str) -> tuple[str, ...]:

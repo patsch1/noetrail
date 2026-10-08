@@ -15,6 +15,7 @@ supersedes it, so the reasoning at the time stays readable.
 | [0006](0006-relation-level-valid-time.md) | Valid time and supersession on the typed relation, not on the entry or the field | accepted |
 | [0007](0007-hybrid-retrieval-default.md) | Both text predicates run by default, ranked by BM25 | accepted; empty-result behavior extended by 0008 |
 | [0008](0008-word-form-fallback.md) | Labelled word-form candidates only after an empty filtered hybrid search | accepted |
+| [0009](0009-typo-and-query-variants.md) | Title/alias typo candidates and up to four retrieval queries under shared budgets | accepted |
 
 Measurements referenced by 0003, 0004 and 0005 are reproducible with
 `tools/measure_search.py`, and the retrieval-quality numbers in 0005 with

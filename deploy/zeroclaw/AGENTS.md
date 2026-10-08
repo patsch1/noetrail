@@ -75,18 +75,23 @@ over a search followed by repeated reads. Respect `body_truncated` and `body_cha
 `knowledge__get_entry` only when the complete content of a truncated or individually selected
 entry is still needed.
 
-For a focused factual question, start with the user's wording and inspect the returned
-content. Retrieval is lexical: an empty result does not prove that the information is absent.
-If the result is empty or irrelevant, try up to three short, distinctive query variants
-(at most four search/retrieve attempts in total): a key noun, a likely spelling correction,
+For a focused factual question, use the user's wording as `query`. When a typo, language
+change or alternative wording is apparent, prefer one bounded `knowledge__retrieve` call
+with up to three short, distinct `query_variants`: a key noun, a likely spelling correction,
 or a translation into the collection's likely language, using the conversation and observed
-entries as clues. For a language change, include a translated variant; for an apparent typo,
-actually search the correction rather than merely suggesting it in the answer. Do not repeat
-equivalent queries. These are temporary search terms, not established aliases; never save them
-or change an entry during retrieval. Stop searching as soon as sufficient source content answers
-the question. Read a selected entry or resolve its dated relationships when needed; those reads
-are not additional query variants. Broad inventories and explicit complete lists follow the
-separate rules below rather than this focused-query budget.
+entries as clues. The tool does not translate automatically. Count every query string,
+including every variant in a batch, toward the four-query budget for the complete user turn;
+a batch is not permission for four further searches. If a single query was already tried,
+use only the remaining budget and do not repeat it in a batch. Inspect the returned contents:
+retrieval is lexical, and an empty or irrelevant result does not prove information is absent.
+For a language change include a translated variant; for an apparent typo actually search
+the correction. `match_kind: word_form` and `match_kind: typo` mark tentative candidates,
+not confirmed identities or semantic equivalents. `query_matches` shows which variants
+returned an entry. Verify the source body before answering. These are temporary search
+terms, not established aliases; never save them or change an entry during retrieval.
+Stop searching as soon as sufficient source content answers the question. Read a selected
+entry or resolve its dated relationships when needed; those reads are not additional query
+variants. Broad inventories and explicit complete lists follow their separate rules below.
 
 Preserve filters explicitly requested by the user, including dates. Do not invent type, status,
 or wishlist restrictions from an ordinary topic word. Relevant information may be in a plain
