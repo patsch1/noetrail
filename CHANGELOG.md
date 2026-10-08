@@ -6,6 +6,8 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a3 - 2026-10-08
+
 - add conservative title/alias typo candidates after an empty hybrid lexical
   and word-form search; labels and observed terms distinguish hints from evidence;
 - let CLI and MCP `retrieve` combine up to four supplied query strings with

@@ -124,6 +124,13 @@ history as well as the current tree. A finding requires a maintainer to choose
 between a deliberate history rewrite and a new clean public repository; the
 tool never makes that destructive choice automatically.
 
+The maintainer has authorized routine alpha updates to include merging and
+publication on GitHub, TestPyPI and PyPI after all required checks pass. That
+standing authorization covers the next alpha in the same release line; stable
+releases, a new line, format changes and production deployment require a
+separate decision. Preserve the protected PyPI environment and review the
+tested tag artifacts as described in [Release process](docs/releasing.md).
+
 ## Pull requests
 
 Keep one coherent change per pull request. The pull-request template has one

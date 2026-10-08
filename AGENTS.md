@@ -64,7 +64,13 @@ Notes that save a wasted run:
 - `SECURITY.md`'s response-time commitments and `CODE_OF_CONDUCT.md`'s contact
   address. Those are promises a maintainer made, not text to improve.
 - Version numbers in `pyproject.toml` and `src/noetrail/version.py`, and the
-  git tag they correspond to. Releases are a human decision.
+  git tag they correspond to, unless the maintainer has authorized the release.
+  The maintainer has given standing authorization for routine alpha updates:
+  after all required checks pass, merge the reviewed change and publish the
+  next alpha on GitHub, TestPyPI and PyPI. Do not ask again for that same
+  authorization. Stable releases, a new release line, format changes and
+  production deployment still need their own decision. Keep the protected
+  PyPI environment and approve only the reviewed, tested tag artifacts.
 - Anything under `.github/workflows/` that grants a permission, and in
   particular `id-token: write`, environments, and pinned action SHAs. Never
   replace a pinned commit SHA with a tag, and never guess a SHA.
