@@ -9,8 +9,9 @@ The first public alpha is `0.10.0a1`, available from
 preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
-The current alpha is `0.10.0a2`, a documentation release with unchanged runtime
-behavior and core schema 12. See its [release notes](releases/0.10.0a2.md).
+The current alpha is `0.10.0a3`, with labelled title/alias typo candidates and
+bounded retrieval variants. The core schema remains 12. See its
+[release notes](releases/0.10.0a3.md).
 
 The intended channels are:
 
@@ -30,8 +31,12 @@ project. See the
 [publisher configuration](https://docs.pypi.org/trusted-publishers/adding-a-publisher/).
 
 The source repository, GitHub prerelease, PyPI and TestPyPI uploads have been
-approved and published. Every future production PyPI upload remains an explicit
-publication gate; the `pypi` reviewer must approve the tested tag artifacts.
+approved and published. The maintainer has authorized routine alpha updates
+to include merging and publication after all required checks pass. Advance to
+the next alpha in the same release line; stable releases, a new release line,
+format changes and production deployment need a separate decision. The `pypi`
+environment remains protected: its reviewer approves only the tested tag
+artifacts, using this standing authorization for routine alpha updates.
 
 ### One-time setup before the first upload
 
@@ -134,12 +139,12 @@ release channel or current alpha changes:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**Published `0.10.0a2` on production PyPI**
+**Published `0.10.0a3` on production PyPI**
 
 | Page | Updated package-publication statement |
 | --- | --- |
 | `README.md` | "available on PyPI, GitHub and TestPyPI" |
-| `docs/quickstart.md` | "`0.10.0a2` is on PyPI" |
+| `docs/quickstart.md` | "`0.10.0a3` is on PyPI" |
 | `docs/installation.md` | "The alpha is on PyPI" |
 | `docs/integrations/mcp-clients.md` | "The alpha is on PyPI" |
 
@@ -182,7 +187,7 @@ and [redacting comment revisions](https://docs.github.com/en/communities/moderat
    failure must be resolved with an explicitly approved rewrite or a new clean
    public repository before visibility changes.
 6. Review compatibility and rollback notes.
-7. Create annotated tag `v0.10.0a2` only after publication approval.
+7. Create annotated tag `v0.10.0a3` only after publication approval.
 
 ## Artifact workflow
 
@@ -212,12 +217,12 @@ After reviewing the artifact, create the prerelease from the downloaded files
 without rebuilding them:
 
 ```sh
-gh release create v0.10.0a2 \
+gh release create v0.10.0a3 \
   --prerelease \
-  --title "Noetrail 0.10.0a2" \
-  --notes-file docs/releases/0.10.0a2.md \
-  dist/noetrail-0.10.0a2-py3-none-any.whl \
-  dist/noetrail-0.10.0a2.tar.gz \
+  --title "Noetrail 0.10.0a3" \
+  --notes-file docs/releases/0.10.0a3.md \
+  dist/noetrail-0.10.0a3-py3-none-any.whl \
+  dist/noetrail-0.10.0a3.tar.gz \
   dist/noetrail-sbom.cdx.json \
   dist/SHA256SUMS.txt
 ```
@@ -230,7 +235,7 @@ Download the distributions, SBOM and checksum manifest into the same directory;
 the manifest uses filenames relative to that directory, without build paths:
 
 ```sh
-gh attestation verify noetrail-0.10.0a2-py3-none-any.whl --repo patsch1/noetrail
+gh attestation verify noetrail-0.10.0a3-py3-none-any.whl --repo patsch1/noetrail
 sha256sum --check SHA256SUMS.txt
 ```
 

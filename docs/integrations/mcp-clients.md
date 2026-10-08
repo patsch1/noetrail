@@ -37,7 +37,7 @@ selection. `list_views` and `run_view` expose only the bounded searches from
 the instance's declarative `views.yaml`.
 
 For alternative wording or a language change, pass `query_variants` alongside
-the original `query`, for example (unreleased source; not in PyPI 0.10.0a2):
+the original `query`, for example (available since 0.10.0a3):
 
 ```json
 {"query": "cold proofing", "query_variants": ["Teigruhe", "Teig kalt gehen lassen"], "limit": 5}
@@ -74,7 +74,7 @@ installs the same CLI and MCP entry points. Use the pinned alpha version:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a2' noetrail quickstart
+uvx --from 'noetrail==0.10.0a3' noetrail quickstart
 ```
 
 From a checkout as an alternative:
@@ -99,7 +99,7 @@ If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a2", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a3", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }

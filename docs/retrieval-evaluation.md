@@ -56,9 +56,9 @@ Next evaluate answer quality through the actual client, and use pilot feedback
 to choose further changes. Existing vectors only reorder lexical candidates;
 translation, broad paraphrases and general typo correction remain agent work.
 
-## Unreleased: title typos and batched variants
+## 0.10.0a3: title typos and batched variants
 
-The next conservative fallback adds one-edit **title/alias** candidates only
+The conservative fallback adds one-edit **title/alias** candidates only
 after the lexical and word-form stages are empty. Rules were fixed before
 running the same 100-question diagnostic; no synonym list or language-specific
 query correction was added. Compared with `63441e4`:

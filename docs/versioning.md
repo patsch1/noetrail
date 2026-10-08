@@ -19,6 +19,9 @@ matching Git tags and release notes. The first published public alpha is
 `0.10.0a2` updates public documentation and synthetic pilot materials without
 changing runtime behavior or the core schema.
 
+`0.10.0a3` adds labelled title/alias typo candidates and caller-supplied
+retrieval variants. Core schema 12 and stored entries remain unchanged.
+
 The compatibility window for a previous core schema is stated in the release
 notes. During such a window, ordinary capture or update operations must not
 implicitly migrate old entries. Once support is removed, `noetrail doctor`
