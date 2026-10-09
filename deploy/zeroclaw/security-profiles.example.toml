@@ -89,6 +89,9 @@ exclude = [
 ]
 
 [risk_profiles.knowledge_vault]
+# knowledge__refresh_bookmark intentionally belongs to neither auto_approve
+# nor always_ask: normal supervised approval supports "Allow this session"
+# for a requested refresh batch. always_ask would override that session grant.
 level = "supervised"
 workspace_only = true
 allowed_roots = []

@@ -659,6 +659,49 @@ TOOLS = [
         required=["url"],
     ),
     tool(
+        "refresh_bookmark",
+        "Fill missing metadata of an existing bookmark from the complete isolated "
+        "fetcher envelope, preserving title, existing site name, tags and body. "
+        "New page fields retain web provenance; only unknown bookmark_kind is "
+        "classified. Retrieval status and timestamp are copied even after failure. "
+        "Requires the latest revision and a matching requested URL; does no fetching.",
+        {
+            "id": ID_SCHEMA,
+            "expected_revision": REVISION_SCHEMA,
+            "envelope": object_schema({
+                "schema_version": {"type": "integer", "minimum": 1, "maximum": 1},
+                "untrusted_web_metadata": {"type": "boolean"},
+                "bookmark": object_schema({
+                    "url": string_schema(max_length=4096),
+                    "canonical_url": string_schema(max_length=4096),
+                    "title": string_schema(max_length=500),
+                    "site_name": string_schema(max_length=500),
+                    "published_at": string_schema(max_length=100),
+                    "language": string_schema(max_length=50),
+                    "page_description": string_schema(max_length=10000),
+                    "authors": {"type": "array", "maxItems": 32,
+                                "items": string_schema(max_length=500)},
+                    "bookmark_kind": string_schema(max_length=20, enum=BOOKMARK_KINDS),
+                    "fetch_status": string_schema(
+                        max_length=20, enum=FETCH_STATUSES[:4]
+                    ),
+                }, required=["url", "canonical_url", "fetch_status"]),
+                "retrieval": object_schema({
+                    "requested_url": string_schema(max_length=4096),
+                    "final_url": string_schema(max_length=4096),
+                    "retrieved_at": string_schema(max_length=100),
+                    "status": string_schema(max_length=20, enum=FETCH_STATUSES[:4]),
+                    "http_status": {"type": "integer", "minimum": 100, "maximum": 599},
+                }, required=["retrieved_at", "status"]),
+                "warnings": {"type": "array", "maxItems": 64,
+                             "items": string_schema(max_length=2000)},
+            }, required=[
+                "schema_version", "untrusted_web_metadata", "bookmark", "retrieval"
+            ]),
+        },
+        required=["id", "expected_revision", "envelope"],
+    ),
+    tool(
         "update",
         "Append user-supplied content; change title, sensitivity, bookmark "
         "kind, or structured-experience metadata; or record a legacy "
@@ -2081,6 +2124,15 @@ class NoetrailServer:
                 "bookmark",
                 "--metadata-file",
                 dict(arguments),
+            )
+
+        if name == "refresh_bookmark":
+            return self._run_with_payload(
+                "refresh-bookmark", "--metadata-file", dict(arguments["envelope"]),
+                prefix_arguments=[
+                    "--expected-revision", str(arguments["expected_revision"])
+                ],
+                positionals=[str(arguments["id"])],
             )
 
         if name == "update":

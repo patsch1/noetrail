@@ -29,6 +29,14 @@ When you save a bookmark, pass the fetcher's `untrusted_web_metadata` flag throu
 `knowledge__save_bookmark`; without it the stored entry cannot tell the two apart afterwards.
 Keep the user's own note outside the `<!-- noetrail:web-content -->` fence.
 
+To enrich an existing bookmark, read its latest revision, delegate its saved URL
+to the isolated bookmark fetcher, then pass the complete reply as `envelope` to
+`knowledge__refresh_bookmark` with `id` and `expected_revision`. This fills missing
+page fields with web provenance, preserves existing values and body, and records
+the retrieval attempt. Use the ordinary mutation approval; an explicit session
+grant can cover a requested batch. Never substitute `update` for fetched fields
+or invent metadata the fetcher did not return.
+
 Read operations may proceed directly. Every mutation requires the user's approval. Preserve
 existing content: updates append or change structured metadata and must not replace an entry's
 complete body. Move entries to trash before deletion; permanent purge is unavailable. Ask for

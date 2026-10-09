@@ -15,7 +15,7 @@ user explicitly wants the same URL in both recipe and reading collections.
 ## Execution
 
 Prefer `search`, `save_bookmark`, `set_status`, `set_tags`, `set_relation`,
-`update`, and `validate` when available. These are canonical MCP tool names; a
+`update`, `refresh_bookmark`, and `validate` when available. These are canonical MCP tool names; a
 host may render them as `<server-alias>__<tool>`. Pass the bookmark fields
 directly to `save_bookmark`; no temporary file is needed.
 
@@ -132,6 +132,22 @@ count and types the same query finds without the restriction; report those.
 Only when that key is absent has nothing matched under any type.
 
 ## Update an existing bookmark
+
+For page-metadata enrichment, read `get_entry` for the latest revision and
+fetch its stored original or canonical URL through the isolated metadata
+service. Pass the entire version-1 reply as `envelope` to `refresh_bookmark`,
+together with `id` and `expected_revision`. It fills missing page fields with
+`web` provenance, classifies only an `unknown` kind, and records retrieval
+status and time. Existing title, site name, metadata, tags and body survive,
+including a failure's hostname fallback. Never send fetched text through
+`update` as if it were user input. A requested batch still requires mutation
+approval; a host's explicit session grant may cover its repeated calls.
+The local equivalent is:
+
+```sh
+noetrail refresh-bookmark <id> --expected-revision <revision> \
+  --metadata-file <fetcher-envelope-json>
+```
 
 Search for the entry and retain its returned `revision`, then use the narrowest
 operation:

@@ -17,6 +17,7 @@ import os
 import sys
 
 from noetrail.body import load_body_headings
+from noetrail.commands.bookmark_refresh import command_refresh_bookmark
 from noetrail.commands.capture import command_bookmark, command_capture, command_recipe
 from noetrail.commands.curate import command_candidates, command_merge
 from noetrail.commands.edit import (
@@ -343,6 +344,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bookmark.add_argument("--allow-duplicate", action="store_true")
     bookmark.set_defaults(handler=command_bookmark, mutating=True)
+
+    refresh = subparsers.add_parser(
+        "refresh-bookmark",
+        help="fill missing bookmark metadata from a fetcher envelope",
+    )
+    refresh.add_argument("id")
+    refresh.add_argument("--metadata-file", required=True)
+    refresh.add_argument("--expected-revision", required=True)
+    refresh.set_defaults(handler=command_refresh_bookmark, mutating=True)
 
     update = subparsers.add_parser(
         "update",

@@ -6,6 +6,12 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- add revision-checked CLI and MCP bookmark refresh from isolated fetcher
+  envelopes, filling missing page metadata with web provenance while preserving
+  existing values, titles, tags and bodies;
+- keep bookmark refresh under normal ZeroClaw session approval so a permitted
+  batch does not require a separate confirmation for every bookmark.
+
 ## 0.10.0a3 - 2026-10-08
 
 - add conservative title/alias typo candidates after an empty hybrid lexical

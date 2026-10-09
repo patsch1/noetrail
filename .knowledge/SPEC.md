@@ -339,6 +339,21 @@ Optional fields include `site_name`, `authors`, `published_at`, `language`,
 supports a more specific kind. Use `fetch_status` values `complete`, `partial`,
 `blocked`, `failed`, or `not_attempted`.
 
+`refresh-bookmark` applies a version-1 isolated fetcher envelope to an existing
+active bookmark under an expected-revision check. The requested URL (or
+`bookmark.url` for a failure envelope without a request URL) must match the
+stored original or canonical URL after normalization; redirects do not change
+the bookmark's identity. Only missing `site_name`, `published_at`, `language`,
+`page_description`, and `authors` are filled, with per-field origin `web`.
+The title, all existing page values, tags and body are preserved. Only
+`bookmark_kind: unknown` can be classified. `fetch_status` and `retrieved_at`
+come from `retrieval`, including a failed or blocked attempt; failure never
+erases earlier page metadata or replaces the title with a hostname. A repeated
+identical envelope succeeds without rewriting the entry or its revision.
+This uses existing fields in schemas 10–12 and does not migrate the entry's
+schema. Earlier schemas must first use the explicit migration command because
+they cannot persist field provenance.
+
 Set a timezone-aware `read_at` automatically when `reading_status` changes to
 `read`. Remove it when the bookmark is moved back to another reading status.
 Never invent a historical reading date while migrating an already-read entry.
