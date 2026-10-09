@@ -234,11 +234,12 @@ full-body replacement.
    To show a stored photo, read the entry, take the `id` of the attachment
    from its `attachments`, and call `get_attachment`.
 
-   The response returns a standard MCP image content block. Render or forward
-   that block through the host's normal image capability. Some host adapters
-   additionally return a `delivery_path`; only host-specific integration
-   instructions may define how to use it. Never invent a path or a textual
-   delivery marker in this portable workflow.
+   Without an outbox, the response returns a standard MCP image content block;
+   render or forward it through the host's normal image capability. With a
+   configured outbox, the response instead gives `delivery_path` and possibly
+   `delivery_marker` for transport without inline image bytes. Only host-specific
+   integration instructions define how to use those fields. Never invent a path
+   or a textual delivery marker in this portable workflow.
 
    It refuses an attachment the named entry does not hold, and an image too
    large to send in one message stays stored and is reported as such.

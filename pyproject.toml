@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "noetrail"
-version = "0.10.0a3"
+version = "0.10.0a4"
 description = "Local-first Markdown knowledge vault with a Python CLI and MCP server"
 readme = "README.md"
 license = "Apache-2.0"

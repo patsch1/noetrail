@@ -6,6 +6,8 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a4 - 2026-10-09
+
 - add revision-checked CLI and MCP bookmark refresh from isolated fetcher
   envelopes, filling missing page metadata with web provenance while preserving
   existing values, titles, tags and bodies;

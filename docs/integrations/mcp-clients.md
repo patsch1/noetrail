@@ -74,7 +74,7 @@ installs the same CLI and MCP entry points. Use the pinned alpha version:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a3' noetrail quickstart
+uvx --from 'noetrail==0.10.0a4' noetrail quickstart
 ```
 
 From a checkout as an alternative:
@@ -99,7 +99,7 @@ If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a3", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a4", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }
@@ -185,10 +185,11 @@ Attachment ingestion is disabled unless the server starts with
 host-supplied path beneath that fixed inbox or a short-lived token returned by
 `list_pending_attachments`; it never reveals the inbox path.
 
-`get_attachment` returns the stored image as a standard MCP image content
-block plus a text/structured summary. A capable client can display that block
-directly. `--attachment-outbox` optionally copies a deliverable image into a
-fixed host workspace and adds `delivery_path` to the summary. A host whose
+Without an outbox, `get_attachment` returns a standard MCP image content block
+plus a text/structured summary for a capable client to display directly.
+With `--attachment-outbox`, it copies the image into a fixed host workspace
+and returns only the summary with `delivery_path`, keeping image bytes out of
+the model's text context. A host whose
 channel adapter requires exact text syntax can additionally set
 `--attachment-delivery-marker-template`, with one `{path}` placeholder; the
 summary then contains the complete `delivery_marker` for an agent to copy

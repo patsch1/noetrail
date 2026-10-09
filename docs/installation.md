@@ -22,16 +22,16 @@ in [Connecting an MCP client](integrations/mcp-clients.md).
 ## Install: single user, own machine
 
 The alpha is available from the
-[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a3),
-[PyPI](https://pypi.org/project/noetrail/0.10.0a3/),
-and [TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a3/). Install it in a
+[GitHub prerelease](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a4),
+[PyPI](https://pypi.org/project/noetrail/0.10.0a4/),
+and [TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a4/). Install it in a
 fresh virtual environment:
 
 <!-- docs-check: skip - installs from PyPI over the network -->
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install noetrail==0.10.0a3
+.venv/bin/python -m pip install noetrail==0.10.0a4
 .venv/bin/noetrail quickstart
 ```
 
@@ -40,7 +40,7 @@ The alpha is on PyPI. Pin its version explicitly when running with `uvx`:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a3' noetrail quickstart
+uvx --from 'noetrail==0.10.0a4' noetrail quickstart
 ```
 
 For the separate TestPyPI channel, use
