@@ -12,7 +12,7 @@ import unittest
 
 from noetrail.constants import MAX_DELIVERABLE_ATTACHMENT_BYTES
 from noetrail.layout import resolve_layout
-from noetrail.mcp import NoetrailServer
+from noetrail.mcp import NoetrailServer, dispatch
 from tests import MCP_COMMAND, temporary_root
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -836,9 +836,12 @@ class NoetrailMcpTest(unittest.TestCase):
         self.assertNotIn(record["path"], json.dumps(summary))
         self.assertEqual(
             summary["delivery_marker"],
-            f'[image:media/{Path(summary["delivery_path"]).name}]',
+            f"[image:media/{record['sha256']}.png]",
         )
         self.assertIn(summary["delivery_marker"], shown["content"][0]["text"])
+        self.assertNotIn("delivery_path", summary)
+        self.assertEqual(json.loads(shown["content"][0]["text"]), summary)
+        self.assertNotIn(str(self.attachment_outbox), json.dumps(shown))
 
     def test_without_an_outbox_the_image_itself_is_returned(self) -> None:
         """The portable behaviour must survive the delivery shortcut.
@@ -924,7 +927,8 @@ class NoetrailMcpTest(unittest.TestCase):
             {"id": entry_id, "attachment_id": record["id"]},
         )["result"]["structuredContent"]  # type: ignore[index]
 
-        delivered = Path(summary["delivery_path"])
+        self.assertNotIn("delivery_path", summary)
+        delivered = self.attachment_outbox / f"{record['sha256']}.png"
         self.assertTrue(delivered.is_file())
         self.assertEqual(delivered.read_bytes(), PNG_PIXEL)
         self.assertTrue(delivered.is_relative_to(self.attachment_outbox))
@@ -946,7 +950,9 @@ class NoetrailMcpTest(unittest.TestCase):
             {"id": entry_id, "attachment_id": record["id"]},
         )
 
-        self.assertIn("delivery_path", summary)
+        delivered = Path(summary["delivery_path"])
+        self.assertTrue(delivered.is_absolute())
+        self.assertEqual(delivered.read_bytes(), PNG_PIXEL)
         self.assertNotIn("delivery_marker", summary)
 
     def test_a_marker_root_returns_a_safe_workspace_relative_path(self) -> None:
@@ -966,7 +972,7 @@ class NoetrailMcpTest(unittest.TestCase):
             {"id": entry_id, "attachment_id": record["id"]},
         )
 
-        self.assertTrue(Path(summary["delivery_path"]).is_absolute())
+        self.assertNotIn("delivery_path", summary)
         self.assertEqual(
             summary["delivery_marker"],
             f"[IMAGE:media/{record['sha256']}.png]",
@@ -989,8 +995,76 @@ class NoetrailMcpTest(unittest.TestCase):
 
         self.assertEqual(
             summary["delivery_marker"],
-            f"[host:{summary['delivery_path']}]",
+            f"[host:{self.root / 'absolute-outbox' / (record['sha256'] + '.png')}]",
         )
+        self.assertNotIn("delivery_path", summary)
+
+    def test_marker_outbox_has_no_bare_image_paths_in_either_content(self) -> None:
+        """A host must not rediscover delivery paths as model-input images.
+
+        A large synthetic JPEG covers the reported request-inflation failure;
+        inspect both serialized summaries rather than only the Python result.
+        This is the Noetrail contract, not a simulation of a channel adapter.
+        """
+
+        image = b"\xff\xd8\xff" + b"x" * (4_300_000 - 3)
+        entry_id, record, attached = self._entry_with_photo(image, "synthetic.jpg")
+        workspace = self.root / "marker-workspace"
+        outbox = workspace / "media"
+        delivered = outbox / f"{record['sha256']}.jpg"
+        for in_process in (True, False):
+            for relative in (False, True):
+                with self.subTest(in_process=in_process, relative=relative):
+                    template = "[IMAGE:{path}]" if relative else "[FILE:{path}]"
+                    server = NoetrailServer(
+                        resolve_layout(root=str(self.root)),
+                        attachment_outbox=outbox,
+                        attachment_delivery_marker_template=template,
+                        attachment_delivery_marker_root=workspace if relative else None,
+                        in_process_reads=in_process,
+                    )
+                    response = dispatch(server, {
+                        "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                        "params": {
+                            "name": "get_attachment",
+                            "arguments": {
+                                "id": entry_id, "attachment_id": record["id"],
+                            },
+                        },
+                    })
+                    wire = json.dumps(response)
+                    result = json.loads(wire)["result"]
+                    self.assertFalse(result["isError"])
+                    summary = result["structuredContent"]
+                    self.assertEqual(
+                        json.loads(result["content"][0]["text"]), summary,
+                    )
+                    self.assertNotIn("delivery_path", summary)
+                    self.assertEqual(
+                        [block["type"] for block in result["content"]], ["text"],
+                    )
+                    marker_path = (
+                        delivered.relative_to(workspace) if relative else delivered
+                    )
+                    expected = template.replace("{path}", marker_path.as_posix())
+                    self.assertEqual(summary["delivery_marker"], expected)
+                    self.assertEqual(delivered.read_bytes(), image)
+                    self.assertEqual(summary["size_bytes"], len(image))
+                    # JSON quoting duplicates the marker in text and structured
+                    # content. Neither copy may have a bare image path beside it.
+                    outside_markers = wire.replace(expected, "")
+                    self.assertNotRegex(
+                        outside_markers,
+                        r'/[^\s"\\\]]+\.(?:png|jpe?g|webp|gif|bmp)',
+                    )
+                    self.assertNotIn(str(outbox), outside_markers)
+                    if not relative:
+                        self.assertNotIn("[IMAGE:", wire)
+                    self.assertLess(len(wire), 4096)
+                    self.assertEqual(
+                        server.call_tool("get_entry", {"id": entry_id})["revision"],
+                        attached["revision"],
+                    )
 
     def test_asking_twice_delivers_one_file(self) -> None:
         entry_id, record, _ = self._entry_with_photo(PNG_PIXEL, "twice.png")

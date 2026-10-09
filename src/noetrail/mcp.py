@@ -766,8 +766,9 @@ TOOLS = [
         "channel can display. Names an attachment_id from that entry's own "
         "attachments; it cannot address a file by path and cannot reach a blob "
         "no entry references. Use it when the user asks to see a photo that is "
-        "stored. A host-configured outbox can instead return delivery_path and "
-        "an optional ready-to-copy delivery_marker, whose path may be made "
+        "stored. A host-configured outbox instead returns a ready-to-copy "
+        "delivery_marker when a template is configured, otherwise delivery_path. "
+        "Marker replies omit the bare delivery path; the marker path may be "
         "relative to a validated host workspace. Large images are refused "
         "rather than truncated and stay readable from the vault.",
         {
@@ -1996,14 +1997,19 @@ class NoetrailServer:
                 # base64 into a prompt that only needed a path, and the
                 # provider rejected the request outright: "Stream must be set
                 # to true". The pixels were never for the model to read.
-                summary["delivery_path"] = delivery_path
                 delivery_marker = self._delivery_marker(delivery_path)
                 if delivery_marker is not None:
                     # This is already the host's complete transport token. An
                     # agent can copy it verbatim instead of reconstructing
                     # syntax around a path, which is both faster and less
                     # error-prone across model turns.
+                    # Do not also expose the bare path: some hosts recognize
+                    # existing absolute image paths in tool results and load
+                    # the file into the model request, defeating the outbox.
+                    # The marker is the sole configured transport contract.
                     summary["delivery_marker"] = delivery_marker
+                else:
+                    summary["delivery_path"] = delivery_path
                 return summary
             return DeliverableImage(
                 media_type=media_type,
@@ -2647,7 +2653,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "optional one-line host delivery syntax containing {path} exactly "
             "once; requires --attachment-outbox and is returned verbatim as "
-            "delivery_marker"
+            "delivery_marker instead of a bare delivery_path"
         ),
     )
     parser.add_argument(

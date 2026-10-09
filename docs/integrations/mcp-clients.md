@@ -74,7 +74,7 @@ installs the same CLI and MCP entry points. Use the pinned alpha version:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a5' noetrail quickstart
+uvx --from 'noetrail==0.10.0a6' noetrail quickstart
 ```
 
 From a checkout as an alternative:
@@ -99,7 +99,7 @@ If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a5", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a6", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }
@@ -188,21 +188,27 @@ host-supplied path beneath that fixed inbox or a short-lived token returned by
 Without an outbox, `get_attachment` returns a standard MCP image content block
 plus a text/structured summary for a capable client to display directly.
 With `--attachment-outbox`, it copies the image into a fixed host workspace
-and returns only the summary with `delivery_path`, keeping image bytes out of
-the model's text context. A host whose
-channel adapter requires exact text syntax can additionally set
-`--attachment-delivery-marker-template`, with one `{path}` placeholder; the
+and returns a summary without an inline image block. Without a marker template,
+that summary includes the absolute `delivery_path`. A host whose channel adapter
+requires exact text syntax can additionally set
+`--attachment-delivery-marker-template`, with one `{path}` placeholder. The
 summary then contains the complete `delivery_marker` for an agent to copy
-verbatim. By default that placeholder receives the absolute `delivery_path`.
+verbatim, and omits `delivery_path` from both text and structured content.
+This avoids exposing a second, bare image path that a host might load into
+its model request. Clients using a marker template must consume the marker;
+clients needing the generic path must leave the template unset. By default the
+marker placeholder receives the absolute path of the prepared outbox copy.
 If a channel resolves paths relative to a fixed workspace, set
 `--attachment-delivery-marker-root` to that workspace; Noetrail then verifies
 that the outbox is inside the root and puts only the safe relative path in the
 marker. Use this relative form for ZeroClaw Matrix. ZeroClaw v0.8.4 Discord
 requires an absolute path inside its agent workspace: set the template to
 `[FILE:{path}]` and omit the marker root. This form has been confirmed to deliver
-an image inline in a Discord chat; inbound staging under `discord_files`
-remains unverified. The agent's image-input parser consumes absolute `IMAGE`
-markers before delivery. See the channel-specific examples in
+an image inline in a Discord chat. Inbound staging under `discord_files` and
+`capture` followed by `add_attachment` have also been confirmed in that chat.
+The agent's image-input parser consumes absolute `IMAGE` markers before delivery.
+Verify the complete send/model-turn behavior in the deployed ZeroClaw build;
+Noetrail's response tests do not exercise that client's media normalization. See the channel-specific examples in
 [ZeroClaw setup](zeroclaw-setup.md). No template is enabled by default, and
 portable Noetrail skills define none. Stored blobs remain private data and
 follow the vault's backup and retention policy.

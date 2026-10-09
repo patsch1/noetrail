@@ -236,8 +236,9 @@ full-body replacement.
 
    Without an outbox, the response returns a standard MCP image content block;
    render or forward it through the host's normal image capability. With a
-   configured outbox, the response instead gives `delivery_path` and possibly
-   `delivery_marker` for transport without inline image bytes. Only host-specific
+   configured outbox, the response gives `delivery_marker` when a template is
+   configured, otherwise `delivery_path`, without inline image bytes. A marker
+   reply omits the bare path from text and structured content. Only host-specific
    integration instructions define how to use those fields. Never invent a path
    or a textual delivery marker in this portable workflow.
 

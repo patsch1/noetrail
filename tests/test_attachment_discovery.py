@@ -228,12 +228,12 @@ class AttachmentDiscoveryTest(unittest.TestCase):
         self.assertEqual(inventory["entries_with_attachments"], 1)
         self.assertEqual(inventory["attachment_count"], 2)
 
-    def test_discord_photo_marker_is_absolute_and_delivers_stored_bytes(self):
+    def test_discord_file_marker_is_absolute_and_delivers_stored_bytes(self):
         server = NoetrailServer(
             self.layout,
             attachment_inbox=self.inbox,
             attachment_outbox=self.base / "workspace" / "knowledge_media",
-            attachment_delivery_marker_template="[PHOTO:{path}]",
+            attachment_delivery_marker_template="[FILE:{path}]",
         )
         entry = server.call_tool("get_entry", {"id": self.first["id"]})
         record = entry["attachments"][0]
@@ -244,8 +244,10 @@ class AttachmentDiscoveryTest(unittest.TestCase):
                 "attachment_id": record["id"],
             },
         )
-        self.assertTrue(Path(result["delivery_path"]).is_absolute())
-        self.assertEqual(
-            result["delivery_marker"], f"[PHOTO:{result['delivery_path']}]"
+        delivered = (
+            self.base / "workspace" / "knowledge_media" / f"{record['sha256']}.png"
         )
-        self.assertEqual(Path(result["delivery_path"]).read_bytes(), PNG)
+        self.assertNotIn("delivery_path", result)
+        self.assertTrue(delivered.is_absolute())
+        self.assertEqual(result["delivery_marker"], f"[FILE:{delivered}]")
+        self.assertEqual(delivered.read_bytes(), PNG)
