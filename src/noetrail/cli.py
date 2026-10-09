@@ -601,6 +601,10 @@ def build_parser() -> argparse.ArgumentParser:
     search = subparsers.add_parser("search", help="search titles, tags, and bodies")
     search.add_argument("query")
     search.add_argument(
+        "--has-attachment", action=argparse.BooleanOptionalAction,
+        help="filter entries with attachments (or without via --no-has-attachment)",
+    )
+    search.add_argument(
         "--explain", action="store_true",
         help="include bounded matching excerpts and their recorded origin",
     )
@@ -726,6 +730,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="search and return bounded full entries in one operation",
     )
     retrieve.add_argument("query")
+    retrieve.add_argument(
+        "--has-attachment", action=argparse.BooleanOptionalAction,
+        help="filter entries with attachments (or without via --no-has-attachment)",
+    )
     retrieve.add_argument(
         "--query-variant",
         dest="query_variants",

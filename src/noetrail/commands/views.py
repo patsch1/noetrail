@@ -12,6 +12,7 @@ from noetrail.search import DEFAULT_B, DEFAULT_K1, RANK_HYBRID
 from noetrail.views import ViewError, ViewRegistry
 
 SEARCH_DEFAULTS: dict[str, object] = {
+    "has_attachment": None,
     "attribute_filter": [],
     "domain": None,
     "reading_status": None,

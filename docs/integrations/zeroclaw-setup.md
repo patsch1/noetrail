@@ -35,7 +35,8 @@ The ZeroClaw process needs this read-only service root:
 ```
 
 Incoming chat files live outside this root, in the agent-specific ZeroClaw
-workspace inbox `matrix_files/`. The Noetrail MCP server receives that single
+workspace inbox: `discord_files/` for Discord, `matrix_files/` for Matrix.
+The Noetrail MCP server receives that single
 folder as a fixed `--attachment-inbox`; it must never receive a parent
 workspace path or another agent's inbox. The inbox is temporary and does not
 replace `vault/attachments/` on the data volume.
@@ -179,10 +180,10 @@ zeroclaw config set mcp.servers.bookmark_fetch.headers
 ```
 
 In the live configuration of the local `knowledge` MCP server, also set the
-absolute path of the knowledge agent's inbox:
+absolute path of the knowledge agent's channel-specific inbox. For Discord:
 
 ```text
---attachment-inbox /path/to/agents/knowledge/workspace/matrix_files
+--attachment-inbox /path/to/agents/knowledge/workspace/discord_files
 ```
 
 The exact workspace path depends on the ZeroClaw installation and has to be
@@ -199,6 +200,42 @@ supervised approval allows Discord's "Allow this session" to cover a requested
 batch, while `always_ask` overrides that session grant. Pass the complete
 isolated fetcher reply as `envelope`; never use `update` to strip the origin
 of page-derived values.
+
+### Stored-image delivery: Discord and Matrix
+
+Use an outbox below the same agent workspace that the channel can read.
+For **Discord on ZeroClaw v0.8.4**, add these MCP arguments:
+
+```text
+--attachment-outbox /path/to/agents/knowledge/workspace/knowledge_media
+--attachment-delivery-marker-template "[PHOTO:{path}]"
+```
+
+Do **not** set `--attachment-delivery-marker-root` for Discord. This produces
+an absolute `[PHOTO:/path/to/.../image.png]` marker inside the agent workspace.
+Discord rejects relative targets with `marker target is not absolute`.
+An absolute `[IMAGE:...]` instead enters ZeroClaw's image-input processing and
+can disappear before the final reply. Discord's sender accepts `PHOTO` as an
+alias for `IMAGE`, while the image-input parser recognizes only `[IMAGE:`.
+The agent must copy `delivery_marker` exactly, without Markdown code fencing.
+This contract is verified against the v0.8.4
+[Discord marker parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-channels/src/discord/markers.rs)
+and [multimodal parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-providers/src/multimodal.rs).
+
+For **Matrix**, use its `matrix_files` inbox and a workspace-relative marker:
+
+```text
+--attachment-inbox /path/to/agents/knowledge/workspace/matrix_files
+--attachment-outbox /path/to/agents/knowledge/workspace/knowledge_media
+--attachment-delivery-marker-template "[IMAGE:{path}]"
+--attachment-delivery-marker-root /path/to/agents/knowledge/workspace
+```
+
+The root verifies that the outbox is inside the workspace and emits a relative
+target such as `[IMAGE:knowledge_media/image.png]`. That relative form belongs
+to Matrix and must not be reused for Discord. The inbox names are channel
+runtime directories, not vault paths. Check these adapter behaviors again when
+upgrading ZeroClaw.
 
 ## 4. Check the configuration
 
@@ -279,8 +316,8 @@ root fixed at server start. The fetcher agent may see only
    and confirm the blob is under `vault/attachments/`.
 10. Confirm the pending list contains no inbox path, and that a token cannot be
     reused after a successful attach.
-11. Offer a path outside `matrix_files/`, a symlink, an SVG, a file above
-    20 MiB, and a file modified after the token was issued through
+11. Offer a path outside the configured channel inbox, a symlink, an SVG, a
+    file above 20 MiB, and a file modified after the token was issued through
     `knowledge__add_attachment`; every attempt must be rejected without any
     vault change.
 12. Capture a synthetic product and a place, then create a `tasting` experience

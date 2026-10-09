@@ -16,6 +16,11 @@ python3 tools/check_secrets.py
 python3 -m unittest discover -s tests -v
 ```
 
+Discord marker and approval behavior was additionally checked against the
+public ZeroClaw `v0.8.4` sources on 2026-10-09; see the channel-specific
+configuration in [ZeroClaw setup](zeroclaw-setup.md). This does not replace
+validation of the full profile against the installed ZeroClaw release.
+
 ## Chosen execution path
 
 ZeroClaw supports three relevant mechanisms:
@@ -169,8 +174,8 @@ fetcher's bearer header belongs in ZeroClaw's encrypted live configuration and
 the matching token reaches the sidecar through a Kubernetes Secret. Do not put
 either value in this repository, MCP arguments, images, or logs.
 
-Inbound Matrix photos are staged by ZeroClaw in the bound agent's
-`matrix_files/` workspace directory. Start the Noetrail MCP with that exact
+Inbound photos are staged in the bound agent's workspace: `discord_files/`
+for Discord and `matrix_files/` for Matrix. Start the Noetrail MCP with that exact
 directory as `--attachment-inbox`. The attachment operation canonicalizes the
 source below this fixed root, rejects symlinks and path escapes, accepts only
 allowlisted raster-image signatures up to 20 MiB, and copies the bytes to the
@@ -186,6 +191,14 @@ to the observed file identity and SHA-256, is consumed after a successful
 attachment, and cannot bypass the target entry's revision check. Keep this
 listing tool auto-approved; keep `knowledge__add_attachment` supervised as a
 mutation.
+
+For stored-image delivery on Discord v0.8.4, keep the outbox inside the
+agent workspace, set `--attachment-delivery-marker-template "[PHOTO:{path}]"`
+and omit `--attachment-delivery-marker-root`. Discord requires absolute
+targets; `PHOTO` preserves the outbound marker through the agent's image-input
+processing. Matrix uses `[IMAGE:{path}]` with the workspace marker root to
+emit a relative target. The attachment-outbox restriction remains fixed at
+server startup; neither template permits callers to select arbitrary paths.
 
 The profile allowlist is intentionally non-empty. Current ZeroClaw
 automatically admits tools named `<server>__<tool>` from MCP servers granted to

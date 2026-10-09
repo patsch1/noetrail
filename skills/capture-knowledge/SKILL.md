@@ -226,6 +226,11 @@ full-body replacement.
    ambiguous, ask the user to resend the intended photos together instead of
    guessing.
 
+   To find entries containing photos, use `search` with an empty query and
+   `has_attachment: true`, across all entry types. Each item includes
+   `attachment_count`; `inventory` gives `entries_with_attachments` and
+   `attachment_count` for the collection, subject to its `complete` flag.
+   Do not search for photo words in titles or infer an image-only entry type.
    To show a stored photo, read the entry, take the `id` of the attachment
    from its `attachments`, and call `get_attachment`.
 

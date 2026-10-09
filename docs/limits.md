@@ -339,6 +339,13 @@ arrays. Use `retrieve` when one answer needs several matching bodies in one
 bounded call, and inspect its explicit truncation fields. Use `get_entry` for
 the complete body or full metadata of one selected entry.
 
+Find stored images with an empty query and `--has-attachment` (MCP:
+`has_attachment: true`); `--no-has-attachment` / `false` finds entries without
+them. The filter applies before ranking fallbacks and pagination, across all
+entry types. `inventory` includes `entries_with_attachments` and
+`attachment_count`; the latter counts references, not distinct blobs or image
+contents. Respect an inventory's `complete` flag when files are unreadable.
+
 The Markdown importer can use `--limit N` for a deterministic trial. Unlike
 search pagination, this is a selection limit, not pagination state; omit it
 for the reviewed full run.

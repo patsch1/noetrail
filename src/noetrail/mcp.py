@@ -347,7 +347,9 @@ TOOLS = [
         "inventory",
         "Return complete aggregate counts for every active vault entry. This "
         "read-only operation has no entry-result limit and returns no titles "
-        "or bodies. relation_count is what holds now, or at as_of.",
+        "or bodies. attachment_count counts stored attachment references; "
+        "entries_with_attachments counts entries containing them. "
+        "relation_count is what holds now, or at as_of.",
         {"as_of": AS_OF_SCHEMA},
     ),
     tool(
@@ -388,10 +390,13 @@ TOOLS = [
         "under a type other than the one its name suggests, so report those "
         "instead of reporting that nothing exists. Relation filters and "
         "relation counts describe the state that holds now, or at as_of when "
-        "one is given.",
+        "one is given. Each result includes attachment_count. To find stored "
+        "photos, use an empty query with has_attachment=true, without guessing "
+        "photo words or an entry type. false selects entries without attachments.",
         {
             "query": string_schema(max_length=2_000),
             "explain": {"type": "boolean"},
+            "has_attachment": {"type": "boolean"},
             "type": string_schema(
                 max_length=20, enum=[*ENTRY_TYPES, "bookmark"]
             ),
@@ -452,7 +457,9 @@ TOOLS = [
         "shared result/body budget. query_matches reports each matching variant. "
         "Supply translations yourself; no automatic translation is performed. "
         "Tentative candidates retain match_kind=word_form or typo; "
-        "check that their contents actually answer the question.",
+        "check that their contents actually answer the question. "
+        "has_attachment optionally filters entries with or without attachments; "
+        "full metadata includes attachment records.",
         {
             "query": string_schema(max_length=2_000),
             "query_variants": {
@@ -460,6 +467,7 @@ TOOLS = [
                 "maxItems": 3,
                 "items": string_schema(max_length=2_000),
             },
+            "has_attachment": {"type": "boolean"},
             "type": string_schema(
                 max_length=20, enum=[*ENTRY_TYPES, "bookmark"]
             ),
@@ -1821,6 +1829,11 @@ class NoetrailServer:
 
         if name == "search":
             command = []
+            if "has_attachment" in arguments:
+                command.append(
+                    "--has-attachment" if arguments["has_attachment"]
+                    else "--no-has-attachment"
+                )
             if "type" in arguments:
                 command.extend(["--type", str(arguments["type"])])
             if "domain" in arguments:
@@ -1912,6 +1925,11 @@ class NoetrailServer:
 
         if name == "retrieve":
             command = []
+            if "has_attachment" in arguments:
+                command.append(
+                    "--has-attachment" if arguments["has_attachment"]
+                    else "--no-has-attachment"
+                )
             for variant in arguments.get("query_variants", []):
                 # Equals keeps an option-like variant a value, never a CLI flag.
                 command.append(f"--query-variant={variant}")

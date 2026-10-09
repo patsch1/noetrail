@@ -169,6 +169,17 @@ review the intervening change; do not retry a stale mutation.
 
 ## Attachments
 
+To find image-bearing entries, call `search` with `query: ""` and
+`has_attachment: true`. The optional boolean also works with `retrieve`;
+`false` selects entries with no attachments. CLI equivalents use
+`--has-attachment` or `--no-has-attachment`. Combine it with existing filters,
+and follow `has_more` / `next_offset` for a complete search listing. Compact
+results contain `attachment_count`; read `get_entry` for attachment IDs.
+`inventory` reports `entries_with_attachments` and `attachment_count` across
+active entries. These count stored references, including repeated use of a
+blob; they do not classify image contents or count distinct photographs.
+An incomplete inventory cannot establish that no attachments exist.
+
 Attachment ingestion is disabled unless the server starts with
 `--attachment-inbox /absolute/path`. `add_attachment` accepts only a
 host-supplied path beneath that fixed inbox or a short-lived token returned by
@@ -185,10 +196,12 @@ verbatim. By default that placeholder receives the absolute `delivery_path`.
 If a channel resolves paths relative to a fixed workspace, set
 `--attachment-delivery-marker-root` to that workspace; Noetrail then verifies
 that the outbox is inside the root and puts only the safe relative path in the
-marker. This also prevents clients that treat absolute image references as
-model input from consuming an outbound delivery marker before the reply is
-sent. For example, the ZeroClaw deployment overlay supplies both its image
-marker template and workspace root. No template is enabled by default, and
+marker. Use this relative form for ZeroClaw Matrix. ZeroClaw v0.8.4 Discord
+requires an absolute path inside its agent workspace: set the template to
+`[PHOTO:{path}]` and omit the marker root. Its sender accepts `PHOTO` as an
+image alias, while the agent's image-input parser consumes absolute `IMAGE`
+markers before delivery. See the channel-specific examples in
+[ZeroClaw setup](zeroclaw-setup.md). No template is enabled by default, and
 portable Noetrail skills define none. Stored blobs remain private data and
 follow the vault's backup and retention policy.
 
