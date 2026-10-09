@@ -11,6 +11,10 @@ All notable user-visible changes will be documented here. The project follows
   existing values, titles, tags and bodies;
 - keep bookmark refresh under normal ZeroClaw session approval so a permitted
   batch does not require a separate confirmation for every bookmark.
+- add `has_attachment` to CLI and MCP search/retrieve, with explicit attachment
+  counts in tool descriptions and guidance for finding images across all types;
+- document ZeroClaw v0.8.4 Discord's `discord_files` inbox and absolute PHOTO
+  delivery marker, keeping relative IMAGE markers specific to Matrix.
 
 ## 0.10.0a3 - 2026-10-08
 

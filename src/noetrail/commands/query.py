@@ -524,6 +524,11 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
 
         if restrict_type and args.type and metadata.get("type") != args.type:
             return False
+        if args.has_attachment is not None:
+            attachments = metadata.get("attachments")
+            has_attachment = isinstance(attachments, list) and bool(attachments)
+            if has_attachment != args.has_attachment:
+                return False
         attributes = metadata.get("attributes", {})
         if restrict_type and attribute_filters:
             if not isinstance(attributes, dict) or any(
