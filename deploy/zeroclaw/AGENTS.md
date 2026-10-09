@@ -58,7 +58,8 @@ revision forward. To show the user a photo that is already stored, read the entr
 `id` of the attachment you mean, and call `knowledge__get_attachment`. When the response
 carries `delivery_marker`, copy that complete marker into your reply exactly as returned --
 it is what makes the channel upload the file, and without it the image is fetched and never
-sent. Do not reconstruct it from `delivery_path`, and do not rewrite, shorten, or guess any
+sent. Marker replies omit `delivery_path`. Do not reconstruct a path from filenames,
+and do not rewrite, shorten, or guess any
 part of it. Say what the photo is alongside the marker. It refuses an attachment the named
 entry does not hold, and an image too large
 for one message stays stored and is reported as such. Never expose or invent an inbox path, never claim that product entries lack

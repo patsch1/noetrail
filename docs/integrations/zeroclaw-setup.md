@@ -35,10 +35,11 @@ The ZeroClaw process needs this read-only service root:
 ```
 
 Incoming chat files belong outside this root, in the agent-specific ZeroClaw
-workspace inbox. The expected directory is `discord_files/` for Discord and
-`matrix_files/` for Matrix. Discord v0.8.4 inbound image staging under
-`discord_files/` has not yet been confirmed in a live chat; verify the actual
-adapter directory with a synthetic upload before relying on this example.
+workspace inbox: `discord_files/` for Discord and `matrix_files/` for Matrix.
+For Discord v0.8.4, a live chat confirmed incoming images under
+`discord_files/<uuid>_<name>.jpg`, followed by successful `capture` and
+`add_attachment`. Verify the actual agent-specific directory with a synthetic
+upload when adopting or upgrading a deployment.
 The Noetrail MCP server receives only that verified folder as a fixed
 `--attachment-inbox`; it must never receive a parent workspace path or another
 agent's inbox. The inbox is temporary and does not replace
@@ -184,7 +185,7 @@ zeroclaw config set mcp.servers.bookmark_fetch.headers
 
 In the live configuration of the local `knowledge` MCP server, also set the
 absolute path of the knowledge agent's channel-specific inbox. For Discord,
-this is the expected path, pending the inbound smoke test below:
+the confirmed directory is:
 
 ```text
 --attachment-inbox /path/to/agents/knowledge/workspace/discord_files
@@ -218,7 +219,8 @@ For **Discord on ZeroClaw v0.8.4**, add these MCP arguments:
 Do **not** set `--attachment-delivery-marker-root` for Discord. This produces
 an absolute `[FILE:/path/to/.../image.png]` marker inside the agent workspace.
 This form has been confirmed in a Discord chat on v0.8.4: the sent image appears
-inline. That outbound result does not verify inbound image staging.
+inline. A separate inbound chat test confirmed `discord_files` staging and
+`capture` followed by `add_attachment`, as recorded below.
 Discord rejects relative targets with `marker target is not absolute`.
 An absolute `[IMAGE:...]` instead enters ZeroClaw's image-input processing and
 can disappear before the final reply. The sender also accepts `PHOTO` as an
@@ -227,6 +229,22 @@ must copy `delivery_marker` exactly, without Markdown code fencing.
 The relevant v0.8.4 implementations are the
 [Discord marker parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-channels/src/discord/markers.rs)
 and [multimodal parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-providers/src/multimodal.rs).
+
+With a marker template, Noetrail returns `delivery_marker` alone as the
+transport field: neither text content nor structured content includes a bare
+`delivery_path`. ZeroClaw can otherwise recognize existing absolute image
+paths in a tool result, wrap them as `IMAGE` input and embed the file bytes
+in the next model request. A duplicated bare path can therefore defeat the
+outbox even though Noetrail itself returns no inline image block.
+
+The deployed build was reported to leave `FILE` markers unchanged. The
+published v0.8.4
+[history canonicalizer](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-runtime/src/agent/history.rs#L158)
+explicitly exempts `IMAGE` payloads only; do not infer identical marker handling
+from the version label alone. After updating Noetrail, repeat outbound delivery
+with a synthetic image and confirm that the next model turn succeeds without
+loading the outbox image into the provider request. Noetrail tests verify its
+own output contract, not the deployed client's complete normalization path.
 
 For **Matrix**, use its `matrix_files` inbox and a workspace-relative marker:
 
@@ -302,11 +320,14 @@ root fixed at server start. The fetcher agent may see only
 
 ## 6. Smoke test
 
-### Discord inbound images: still unverified on v0.8.4
+### Discord inbound images: confirmed on v0.8.4
 
-The outbound `FILE` result does not establish that incoming images are saved
-under `discord_files`. Noetrail's synthetic inbox tests exercise its own
-attachment handling, not the ZeroClaw Discord adapter. To verify this direction:
+The maintainer confirmed in a live Discord chat that incoming images are staged
+under `<workspace>/discord_files/<uuid>_<name>.jpg` and that `capture` followed
+by `add_attachment` succeeds. This is a separate observation from outbound
+`FILE` delivery. Noetrail's synthetic inbox tests exercise its own attachment
+handling, not the Discord adapter. Repeat this check for a new deployment or
+adapter build:
 
 1. Upload a small synthetic PNG directly in the knowledge agent's Discord chat.
 2. In the running container, verify that the adapter created the image beneath
@@ -318,7 +339,8 @@ attachment handling, not the ZeroClaw Discord adapter. To verify this direction:
    using `knowledge__add_attachment` and the entry's current revision.
 4. Read the entry and validate the vault to confirm its attachment reference.
    Record the adapter version and whether staging, listing and attachment all
-   passed. Until then, inbound Discord support remains unverified.
+   passed for that deployment. Keep the live confirmation separate from
+   Noetrail's synthetic unit-test results.
 
 ### Vault operations
 

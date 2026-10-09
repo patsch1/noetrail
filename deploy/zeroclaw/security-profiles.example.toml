@@ -53,12 +53,13 @@ args = [
 tool_timeout_secs = 30
 
 # Add channel-specific attachment arguments to the knowledge server above.
-# Discord v0.8.4: expected inbox <workspace>/discord_files; inbound unverified.
-#   Verify with a synthetic chat upload, then bind only that exact directory:
+# Discord v0.8.4: inbound staging and capture/add_attachment confirmed in chat.
+#   Bind only this agent's exact inbox; recheck with a synthetic upload on upgrade:
 #   --attachment-inbox <workspace>/discord_files
 #   --attachment-outbox <workspace>/knowledge_media
 #   --attachment-delivery-marker-template "[FILE:{path}]"
 #   Absolute FILE delivery of an image inline is confirmed in a v0.8.4 chat.
+#   Marker replies omit bare delivery_path; verify the next model turn as well.
 #   Omit --attachment-delivery-marker-root: Discord needs absolute targets.
 # Matrix: --attachment-inbox <workspace>/matrix_files
 #   --attachment-outbox <workspace>/knowledge_media

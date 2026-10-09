@@ -6,6 +6,18 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a6 - 2026-10-09
+
+- omit `delivery_path` from `get_attachment` text and structured content when
+  an outbox marker template is configured; the complete `delivery_marker`
+  remains the transport field, avoiding a second bare image path that clients
+  can load into model requests;
+- preserve generic outbox `delivery_path` replies without a template and the
+  standard MCP image-content response without an outbox;
+- record live confirmation of Discord v0.8.4 `discord_files` staging and
+  `capture` followed by `add_attachment`, and distinguish the Noetrail output
+  regression from the deployed client's complete marker-normalization path.
+
 ## 0.10.0a5 - 2026-10-09
 
 Documentation and deployment-guidance release; runtime behavior and core schema
