@@ -3,9 +3,9 @@
 Repository publication and a package release are separate decisions. Publishing
 the source makes the Git history, issues, pull requests and Actions output
 visible; creating the release tag also starts the package upload workflow.
-The first public alpha was `0.10.0a1`. The current `0.10.0a3` retrieval
+The first public alpha was `0.10.0a1`. The current `0.10.0a4` bookmark and attachment
 release preserves core schema 12 and the dependency-free runtime; see its
-[release notes](releases/0.10.0a3.md).
+[release notes](releases/0.10.0a4.md).
 
 The public repository starts from a reviewed source snapshot dated 2026-10-07.
 Earlier development commits and repository conversations remain private.

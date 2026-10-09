@@ -11,10 +11,10 @@ client, this is the whole thing:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a3' noetrail quickstart
+uvx --from 'noetrail==0.10.0a4' noetrail quickstart
 ```
 
-`0.10.0a3` is on PyPI. The command pins the alpha version explicitly. See
+`0.10.0a4` is on PyPI. The command pins the alpha version explicitly. See
 [installation](installation.md#install-single-user-own-machine) for
 virtual-environment and TestPyPI alternatives. From a checkout the same command is
 `.venv/bin/noetrail quickstart`, which is what the rest of this page uses. It

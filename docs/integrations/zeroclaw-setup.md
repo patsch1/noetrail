@@ -278,6 +278,7 @@ The agent must see tools prefixed with `knowledge__`, including:
 - `knowledge__list_pending_attachments`
 - `knowledge__add_attachment`
 - `knowledge__save_bookmark`
+- `knowledge__refresh_bookmark`
 - `knowledge__save_recipe`
 - `knowledge__review_queue`
 - `knowledge__trash`
