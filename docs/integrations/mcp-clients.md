@@ -74,7 +74,7 @@ installs the same CLI and MCP entry points. Use the pinned alpha version:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a4' noetrail quickstart
+uvx --from 'noetrail==0.10.0a5' noetrail quickstart
 ```
 
 From a checkout as an alternative:
@@ -99,7 +99,7 @@ If you used `uvx` for quickstart, launch the MCP server through `uvx` too:
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a4", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a5", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }
@@ -199,8 +199,9 @@ If a channel resolves paths relative to a fixed workspace, set
 that the outbox is inside the root and puts only the safe relative path in the
 marker. Use this relative form for ZeroClaw Matrix. ZeroClaw v0.8.4 Discord
 requires an absolute path inside its agent workspace: set the template to
-`[PHOTO:{path}]` and omit the marker root. Its sender accepts `PHOTO` as an
-image alias, while the agent's image-input parser consumes absolute `IMAGE`
+`[FILE:{path}]` and omit the marker root. This form has been confirmed to deliver
+an image inline in a Discord chat; inbound staging under `discord_files`
+remains unverified. The agent's image-input parser consumes absolute `IMAGE`
 markers before delivery. See the channel-specific examples in
 [ZeroClaw setup](zeroclaw-setup.md). No template is enabled by default, and
 portable Noetrail skills define none. Stored blobs remain private data and

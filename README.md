@@ -13,10 +13,10 @@ Capture notes, link related entries, and retrieve stored knowledge through a
 Python CLI or a bounded Model Context Protocol (MCP) server. Markdown files
 remain the source of truth and can be read without Noetrail.
 
-**Status:** `0.10.0a4` is a public alpha, available on
-[PyPI](https://pypi.org/project/noetrail/0.10.0a4/),
-[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a4), and
-[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a4/).
+**Status:** `0.10.0a5` is a public alpha, available on
+[PyPI](https://pypi.org/project/noetrail/0.10.0a5/),
+[GitHub](https://github.com/patsch1/noetrail/releases/tag/v0.10.0a5), and
+[TestPyPI](https://test.pypi.org/project/noetrail/0.10.0a5/).
 Python 3.11 or newer is required. The Python runtime has no third-party
 package dependencies. CLI and MCP interfaces may change during the alpha;
 see [versioning and compatibility][versioning].
@@ -34,7 +34,7 @@ run the published alpha without a source checkout:
 <!-- docs-check: skip - uvx installs from a package index over the network -->
 
 ```sh
-uvx --from 'noetrail==0.10.0a4' noetrail quickstart
+uvx --from 'noetrail==0.10.0a5' noetrail quickstart
 ```
 
 `quickstart` creates `~/noetrail/data` and `~/noetrail/config`, adds three
@@ -79,7 +79,7 @@ configuration paths. For the `uvx` method above, clients that accept a
     "noetrail": {
       "command": "uvx",
       "args": [
-        "--from", "noetrail==0.10.0a4", "noetrail-mcp",
+        "--from", "noetrail==0.10.0a5", "noetrail-mcp",
         "--data-root", "/absolute/data", "--config-root", "/absolute/config"
       ]
     }
@@ -197,7 +197,7 @@ maintainer vault; it requires one. `make release-check` tests an unpacked source
 distribution and a freshly installed wheel, including synthetic migration and
 restore acceptance. CodeQL runs alongside CI on public changes.
 
-Noetrail `0.10.0a4` is available on PyPI, GitHub and TestPyPI. Release artifacts
+Noetrail `0.10.0a5` is available on PyPI, GitHub and TestPyPI. Release artifacts
 include checksums, build provenance, and a CycloneDX bill of materials.
 The source repository is public. Package uploads require maintainer
 authorization and the protected PyPI environment review. See
@@ -244,7 +244,7 @@ content is separate data and is not relicensed by this repository.
 [privacy]: https://github.com/patsch1/noetrail/blob/main/docs/privacy.md
 [pyproject]: https://github.com/patsch1/noetrail/blob/main/pyproject.toml
 [quickstart]: https://github.com/patsch1/noetrail/blob/main/docs/quickstart.md
-[release-notes]: https://github.com/patsch1/noetrail/blob/main/docs/releases/0.10.0a4.md
+[release-notes]: https://github.com/patsch1/noetrail/blob/main/docs/releases/0.10.0a5.md
 [releasing]: https://github.com/patsch1/noetrail/blob/main/docs/releasing.md
 [roadmap]: https://github.com/patsch1/noetrail/blob/main/ROADMAP.md
 [schema-packs]: https://github.com/patsch1/noetrail/blob/main/docs/schema-packs.md

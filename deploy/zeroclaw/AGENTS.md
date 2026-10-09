@@ -74,7 +74,7 @@ words in titles. Search items include `attachment_count`; continue with
 its attachment IDs before `knowledge__get_attachment`. Counts cover stored
 references, not visual recognition or deduplicated images; respect inventory
 `complete` and unreadable-entry warnings before making a collection-wide claim.
-For outbound Discord delivery, copy the returned absolute `[PHOTO:...]` marker
+For outbound Discord delivery, copy the returned absolute `[FILE:...]` marker
 unchanged. Matrix uses the configured relative `[IMAGE:...]` marker. Neither
 form is an inbound attachment path or permission to read arbitrary files.
 
