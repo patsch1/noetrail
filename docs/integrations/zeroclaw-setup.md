@@ -34,12 +34,15 @@ The ZeroClaw process needs this read-only service root:
 └── trash/                      read-write from the data volume
 ```
 
-Incoming chat files live outside this root, in the agent-specific ZeroClaw
-workspace inbox: `discord_files/` for Discord, `matrix_files/` for Matrix.
-The Noetrail MCP server receives that single
-folder as a fixed `--attachment-inbox`; it must never receive a parent
-workspace path or another agent's inbox. The inbox is temporary and does not
-replace `vault/attachments/` on the data volume.
+Incoming chat files belong outside this root, in the agent-specific ZeroClaw
+workspace inbox. The expected directory is `discord_files/` for Discord and
+`matrix_files/` for Matrix. Discord v0.8.4 inbound image staging under
+`discord_files/` has not yet been confirmed in a live chat; verify the actual
+adapter directory with a synthetic upload before relying on this example.
+The Noetrail MCP server receives only that verified folder as a fixed
+`--attachment-inbox`; it must never receive a parent workspace path or another
+agent's inbox. The inbox is temporary and does not replace
+`vault/attachments/` on the data volume.
 
 The Git release contains no vault data. In a Kubernetes deployment, `vault/`
 and `trash/` are overlaid by volume mounts. The container runs as a non-root
@@ -180,7 +183,8 @@ zeroclaw config set mcp.servers.bookmark_fetch.headers
 ```
 
 In the live configuration of the local `knowledge` MCP server, also set the
-absolute path of the knowledge agent's channel-specific inbox. For Discord:
+absolute path of the knowledge agent's channel-specific inbox. For Discord,
+this is the expected path, pending the inbound smoke test below:
 
 ```text
 --attachment-inbox /path/to/agents/knowledge/workspace/discord_files
@@ -208,17 +212,19 @@ For **Discord on ZeroClaw v0.8.4**, add these MCP arguments:
 
 ```text
 --attachment-outbox /path/to/agents/knowledge/workspace/knowledge_media
---attachment-delivery-marker-template "[PHOTO:{path}]"
+--attachment-delivery-marker-template "[FILE:{path}]"
 ```
 
 Do **not** set `--attachment-delivery-marker-root` for Discord. This produces
-an absolute `[PHOTO:/path/to/.../image.png]` marker inside the agent workspace.
+an absolute `[FILE:/path/to/.../image.png]` marker inside the agent workspace.
+This form has been confirmed in a Discord chat on v0.8.4: the sent image appears
+inline. That outbound result does not verify inbound image staging.
 Discord rejects relative targets with `marker target is not absolute`.
 An absolute `[IMAGE:...]` instead enters ZeroClaw's image-input processing and
-can disappear before the final reply. Discord's sender accepts `PHOTO` as an
-alias for `IMAGE`, while the image-input parser recognizes only `[IMAGE:`.
-The agent must copy `delivery_marker` exactly, without Markdown code fencing.
-This contract is verified against the v0.8.4
+can disappear before the final reply. The sender also accepts `PHOTO` as an
+image alias, but the example uses the chat-confirmed `FILE` form. The agent
+must copy `delivery_marker` exactly, without Markdown code fencing.
+The relevant v0.8.4 implementations are the
 [Discord marker parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-channels/src/discord/markers.rs)
 and [multimodal parser](https://github.com/zeroclaw-labs/zeroclaw/blob/v0.8.4/crates/zeroclaw-providers/src/multimodal.rs).
 
@@ -295,6 +301,26 @@ root fixed at server start. The fetcher agent may see only
 `knowledge__*` tools.
 
 ## 6. Smoke test
+
+### Discord inbound images: still unverified on v0.8.4
+
+The outbound `FILE` result does not establish that incoming images are saved
+under `discord_files`. Noetrail's synthetic inbox tests exercise its own
+attachment handling, not the ZeroClaw Discord adapter. To verify this direction:
+
+1. Upload a small synthetic PNG directly in the knowledge agent's Discord chat.
+2. In the running container, verify that the adapter created the image beneath
+   that agent's exact `discord_files` directory. If it uses another directory,
+   bind only the verified inbox with `--attachment-inbox` and restart the session;
+   do not widen the root to the whole workspace.
+3. Call `knowledge__list_pending_attachments` and confirm that the fresh upload
+   yields a token. Then, with mutation approval, attach it to a synthetic entry
+   using `knowledge__add_attachment` and the entry's current revision.
+4. Read the entry and validate the vault to confirm its attachment reference.
+   Record the adapter version and whether staging, listing and attachment all
+   passed. Until then, inbound Discord support remains unverified.
+
+### Vault operations
 
 1. Ask the agent: "Show me my review list."
 2. Have it store a synthetic thought.

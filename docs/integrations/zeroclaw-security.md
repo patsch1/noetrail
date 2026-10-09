@@ -174,10 +174,12 @@ fetcher's bearer header belongs in ZeroClaw's encrypted live configuration and
 the matching token reaches the sidecar through a Kubernetes Secret. Do not put
 either value in this repository, MCP arguments, images, or logs.
 
-Inbound photos are staged in the bound agent's workspace: `discord_files/`
-for Discord and `matrix_files/` for Matrix. Start the Noetrail MCP with that exact
-directory as `--attachment-inbox`. The attachment operation canonicalizes the
-source below this fixed root, rejects symlinks and path escapes, accepts only
+Bind inbound photos to the exact adapter inbox in the agent's workspace:
+`discord_files/` is expected for Discord, while Matrix uses `matrix_files/`.
+Discord v0.8.4 staging under `discord_files/` remains unverified in a live chat;
+confirm it with the [inbound smoke test](zeroclaw-setup.md#discord-inbound-images-still-unverified-on-v084).
+Start the Noetrail MCP with only the verified directory as `--attachment-inbox`.
+The attachment operation canonicalizes the source below this fixed root, rejects symlinks and path escapes, accepts only
 allowlisted raster-image signatures up to 20 MiB, and copies the bytes to the
 PVC before adding a revisioned reference. Never configure an agent workspace
 root, `/tmp`, `/`, or another broad shared directory as the inbox.
@@ -193,11 +195,12 @@ listing tool auto-approved; keep `knowledge__add_attachment` supervised as a
 mutation.
 
 For stored-image delivery on Discord v0.8.4, keep the outbox inside the
-agent workspace, set `--attachment-delivery-marker-template "[PHOTO:{path}]"`
-and omit `--attachment-delivery-marker-root`. Discord requires absolute
-targets; `PHOTO` preserves the outbound marker through the agent's image-input
-processing. Matrix uses `[IMAGE:{path}]` with the workspace marker root to
-emit a relative target. The attachment-outbox restriction remains fixed at
+agent workspace, set `--attachment-delivery-marker-template "[FILE:{path}]"`
+and omit `--attachment-delivery-marker-root`. An absolute `FILE` marker has been
+confirmed to deliver an image inline in a v0.8.4 Discord chat. Discord requires
+absolute targets; `FILE` avoids the agent's `IMAGE` input-marker processing.
+This result verifies outbound delivery only, not inbound staging. Matrix uses
+`[IMAGE:{path}]` with the workspace marker root to emit a relative target. The attachment-outbox restriction remains fixed at
 server startup; neither template permits callers to select arbitrary paths.
 
 The profile allowlist is intentionally non-empty. Current ZeroClaw

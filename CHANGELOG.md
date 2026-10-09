@@ -6,6 +6,16 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a5 - 2026-10-09
+
+Documentation and deployment-guidance release; runtime behavior and core schema
+12 are unchanged.
+
+- use absolute FILE markers for chat-confirmed inline image delivery on
+  ZeroClaw Discord v0.8.4, keeping relative IMAGE markers specific to Matrix;
+- mark Discord inbound image staging under `discord_files` as unverified and
+  document a synthetic upload, staging, listing and attachment smoke test.
+
 ## 0.10.0a4 - 2026-10-09
 
 - add revision-checked CLI and MCP bookmark refresh from isolated fetcher
