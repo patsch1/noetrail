@@ -19,7 +19,7 @@ The current surface is:
 | --- | --- |
 | Schema discovery | `list_types`, `describe_type` |
 | Read and review | `inventory`, `search`, `retrieve`, `list_views`, `run_view`, `get_entry`, `review_queue`, `relations`, `list_trash`, `validate` |
-| Capture and update | `capture`, `save_recipe`, `save_bookmark`, `update` |
+| Capture and update | `capture`, `save_recipe`, `save_bookmark`, `refresh_bookmark`, `update` |
 | Attachments | `list_pending_attachments`, `add_attachment`, `get_attachment` |
 | Structure and status | `set_relation`, `set_unresolved_relation`, `set_tags`, `set_status`, `complete_review` |
 | Knowledge maintenance | `find_candidates`, `merge_entries` |
@@ -199,6 +199,19 @@ the separate `noetrail-bookmark-fetcher`, which has no vault access and returns
 allowlisted metadata rather than page bodies. Keep that trust boundary intact:
 giving a knowledge-capable agent a general web tool reintroduces prompt
 injection into the write path.
+
+For an existing bookmark, read `get_entry` for its current revision, delegate
+the saved URL to the isolated fetcher, then call `refresh_bookmark` with `id`,
+`expected_revision` and `envelope` containing the entire fetcher reply. It fills
+missing page metadata with `web` provenance and classifies only an `unknown`
+kind. Existing title, site name, authors, tags and body remain unchanged;
+retrieval status and timestamp come from the reply, including failures.
+The request URL must match the saved original or canonical URL. No fetching
+occurs in this tool. Its CLI equivalent is `noetrail refresh-bookmark ID
+--expected-revision REVISION --metadata-file envelope.json`. Refresh requires
+mutation approval; a permitted ZeroClaw session can authorize a batch.
+Schemas 10–12 support this operation; older entries require explicit migration
+before page fields can retain their provenance.
 
 ## Existing vaults and hardened deployments
 

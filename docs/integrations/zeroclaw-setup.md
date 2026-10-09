@@ -193,6 +193,13 @@ on the knowledge data volume. The deployment profile must also auto-approve
 `knowledge__add_attachment` as a confirmation-gated mutation like the other
 writing knowledge tools.
 
+`knowledge__refresh_bookmark` is a revision-checked, fill-only mutation for
+existing bookmarks. Keep it in neither `auto_approve` nor `always_ask`: normal
+supervised approval allows Discord's "Allow this session" to cover a requested
+batch, while `always_ask` overrides that session grant. Pass the complete
+isolated fetcher reply as `envelope`; never use `update` to strip the origin
+of page-derived values.
+
 ## 4. Check the configuration
 
 In the deployment:
