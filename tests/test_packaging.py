@@ -533,6 +533,7 @@ class PackagingMetadataTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn('package-ecosystem: "github-actions"', configuration)
         self.assertIn('interval: "weekly"', configuration)
+        self.assertIn('- "github/codeql-action*"', configuration)
 
     def test_codeql_analyses_python_with_least_privilege(self) -> None:
         workflow = (
@@ -542,6 +543,10 @@ class PackagingMetadataTest(unittest.TestCase):
         self.assertIn("security-events: write", workflow)
         self.assertIn("github/codeql-action/init@", workflow)
         self.assertIn("github/codeql-action/analyze@", workflow)
+        # CodeQL fails when init and analyze run different versions.
+        references = re.findall(r"github/codeql-action/\w+@([0-9a-f]+)", workflow)
+        self.assertEqual(len(references), 2)
+        self.assertEqual(len(set(references)), 1)
 
 
 if __name__ == "__main__":

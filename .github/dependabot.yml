@@ -14,6 +14,12 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    # CodeQL refuses to run when its init and analyze steps are on different
+    # versions, so the two must always move in one pull request.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
 
 # There is deliberately no "pip" entry: the runtime has no third-party
 # dependencies, and the two CI-only tools are pinned in the workflows.
