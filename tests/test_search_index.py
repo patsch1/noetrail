@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -30,6 +31,7 @@ import unittest
 from noetrail import cli
 from noetrail.errors import InvalidRequest, StorageError
 from noetrail.index import (
+    VaultSignature,
     index_path,
     open_for_search,
     read_index,
@@ -501,6 +503,93 @@ class IndexedVaultTest(VaultHarness, unittest.TestCase):
             path.relative_to(self.data).as_posix() for path in entry_paths(self.data)
         }
         self.assertEqual(set(scan_signatures(self.data).signatures), expected)
+
+    def test_the_signature_walk_matches_the_relpath_walk_it_replaced(self) -> None:
+        """The relative paths are byte-identical to what ``os.path.relpath`` gave.
+
+        They feed the signature digest, so an index written by the version that
+        still called ``relpath`` has to verify as fresh after the walk switched
+        to slicing off the root prefix. The reference below is that earlier
+        walk, kept here rather than in the module so it cannot be "fixed" in
+        step with the code it checks.
+        """
+
+        def reference(root: Path) -> VaultSignature:
+            found: dict[str, tuple[int, int]] = {}
+
+            def walk(directory: str) -> None:
+                for entry in os.scandir(directory):
+                    if entry.name.endswith(".md"):
+                        status = entry.stat()
+                        found[os.path.relpath(entry.path, root)] = (
+                            status.st_mtime_ns,
+                            status.st_size,
+                        )
+                    if entry.is_dir(follow_symlinks=False):
+                        walk(entry.path)
+
+            vault = root / "vault"
+            if vault.exists():
+                walk(str(vault))
+            material = "\n".join(
+                f"{relative}\0{mtime}\0{size}"
+                for relative, (mtime, size) in sorted(found.items())
+            )
+            return VaultSignature(
+                signatures=found,
+                digest="sha256:"
+                + hashlib.sha256(material.encode("utf-8")).hexdigest(),
+            )
+
+        self.seed()
+        vault = self.data / "vault"
+        nested = vault / "notes" / "deep" / "deeper"
+        nested.mkdir(parents=True)
+        (nested / "buried.md").write_text("---\nid: x\n---\n", encoding="utf-8")
+        named_like_entry = vault / "notes" / "folder.md"
+        named_like_entry.mkdir()
+        (named_like_entry / "inside.md").write_text("inside", encoding="utf-8")
+        (vault / "notes" / "not-markdown.txt").write_text("ignored", encoding="utf-8")
+        (vault / "notes" / "Café notes – ünïcode.md").write_text(
+            "synthetic", encoding="utf-8"
+        )
+        outside = self.base / "outside"
+        outside.mkdir()
+        (outside / "linked.md").write_text("---\nid: y\n---\n", encoding="utf-8")
+        (vault / "linked-away").symlink_to(outside)
+        (vault / "linked-away.md").symlink_to(outside)
+        (vault / "notes" / "linked-file.md").symlink_to(outside / "linked.md")
+
+        expected = reference(self.data)
+        # Every shape the walk has to mirror is actually present.
+        for relative in (
+            "vault/notes/deep/deeper/buried.md",
+            "vault/notes/folder.md",
+            "vault/notes/folder.md/inside.md",
+            "vault/linked-away.md",
+            "vault/notes/linked-file.md",
+        ):
+            self.assertIn(relative.replace("/", os.sep), expected.signatures)
+        self.assertFalse(
+            any(
+                "not-markdown" in key or "linked.md" in key
+                for key in expected.signatures
+            )
+        )
+
+        # The resolved root the CLI passes, a relative spelling, and one with a
+        # non-normalised component all have to slice to the same strings.
+        spellings = (
+            self.data,
+            Path(os.path.relpath(self.data)),
+            self.data / "vault" / "..",
+        )
+        for root in spellings:
+            with self.subTest(root=str(root)):
+                self.assertEqual(reference(root), expected)
+                actual = scan_signatures(root)
+                self.assertEqual(actual.signatures, expected.signatures)
+                self.assertEqual(actual.digest, expected.digest)
 
 
 class ConcurrentIndexTest(unittest.TestCase):
