@@ -142,7 +142,7 @@ class VaultSignature:
     digest: str
 
 
-def _walk_entries(directory: str, root: str, found: dict[str, tuple[int, int]]) -> None:
+def _walk_entries(directory: str, cut: int, found: dict[str, tuple[int, int]]) -> None:
     """Reproduce ``vault.rglob("*.md")`` while reusing the walk's own stat.
 
     ``entry_paths`` walks the tree and then stats each result again, which is
@@ -157,6 +157,10 @@ def _walk_entries(directory: str, root: str, found: dict[str, tuple[int, int]]) 
     but does yield anything whose *name* matches -- including a directory. Both
     behaviours are mirrored, because a file the scan sees and the index does
     not is exactly the disagreement this module exists to prevent.
+
+    ``cut`` is where the root-relative part of ``entry.path`` starts; see
+    ``scan_signatures``. Slicing instead of ``os.path.relpath`` was measured at
+    roughly a third of the walk at fifty thousand entries.
     """
 
     try:
@@ -172,16 +176,13 @@ def _walk_entries(directory: str, root: str, found: dict[str, tuple[int, int]]) 
                 # Vanished between the walk and the stat. The next query walks
                 # again and sees a different digest either way.
                 continue
-            found[os.path.relpath(entry.path, root)] = (
-                status.st_mtime_ns,
-                status.st_size,
-            )
+            found[entry.path[cut:]] = (status.st_mtime_ns, status.st_size)
         try:
             recurse = entry.is_dir(follow_symlinks=False)
         except OSError:
             recurse = False
         if recurse:
-            _walk_entries(entry.path, root, found)
+            _walk_entries(entry.path, cut, found)
 
 
 def scan_signatures(root: Path) -> VaultSignature:
@@ -190,10 +191,31 @@ def scan_signatures(root: Path) -> VaultSignature:
     signatures: dict[str, tuple[int, int]] = {}
     vault = root / "vault"
     if vault.exists():
-        _walk_entries(str(vault), str(root), signatures)
+        # Every path the walk sees is ``os.path.join`` descending from this
+        # string, so it starts with it verbatim, and it ends in the literal
+        # ``vault`` because a ``Path`` never carries a trailing separator after
+        # a name. Cutting just before that ``vault`` yields what
+        # ``os.path.relpath(path, root)`` did, byte for byte: the relative
+        # part is plain names from ``scandir``, never ``.`` or ``..``, so
+        # normalising cannot change it. Anchoring on the ``vault`` component
+        # rather than on ``str(root) + os.sep`` also holds for a root that is
+        # the filesystem root (``/``) or ``.``, whose spellings would break a
+        # root prefix. The digest depends on these strings, so an index
+        # written before this changed still verifies as fresh.
+        directory = str(vault)
+        _walk_entries(directory, len(directory) - len("vault"), signatures)
+    # The lines in path order. Sorting the finished lines gives the same order
+    # as sorting the paths, and compares strings rather than tuples: paths are
+    # distinct and cannot contain NUL, so two lines differ first where their
+    # paths do, or -- when one path is a prefix of the other -- where the
+    # shorter one's NUL meets a character that is necessarily greater.
     material = "\n".join(
-        f"{relative}\0{mtime}\0{size}"
-        for relative, (mtime, size) in sorted(signatures.items())
+        sorted(
+            [
+                f"{relative}\0{mtime}\0{size}"
+                for relative, (mtime, size) in signatures.items()
+            ]
+        )
     )
     return VaultSignature(
         signatures=signatures,
