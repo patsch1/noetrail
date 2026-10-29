@@ -252,9 +252,16 @@ The freshness check is one stat per file and runs on every indexed query, so it
 is the floor under the latency above: at 50,000 entries it is 505 ms of the
 718 ms.
 
-The incremental update re-reads only the entries whose signature moved, but
-rewrites the whole index file, and that rewrite is what the column measures.
-It is charged to every write once an index exists:
+The incremental update re-reads only the entries whose signature moved. For a
+small change set it builds the new index from the stored one by copying the
+bytes of every unchanged document and posting list and splicing in what the
+changed entries touch, so it costs the freshness check's stat walk, parsing the
+changed entries, and reading, hashing and writing the file once. When more than
+64 entries and more than 2 % of the vault changed together, it decodes the
+stored index and encodes it again instead, which yields the same bytes. Either
+way the file is replaced whole and atomically, and an index that already
+matches the vault is not rewritten at all. The update is charged to every
+write once an index exists:
 
 | Entries | `capture` without an index | `capture` with an index |
 | ---: | ---: | ---: |

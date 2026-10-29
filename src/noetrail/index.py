@@ -38,6 +38,14 @@ entry index against 0.02 s for the same data as ``array`` sections, and the
 whole point is to be faster than the 1.4 s scan it replaces. The header stays
 JSON so the interesting facts -- what it indexed, when, against which vault --
 are readable with ``head -1``.
+
+Keeping it current after a write costs the stat walk the freshness check needs
+anyway plus work proportional to the change: the changed entries are parsed,
+and the new payload is spliced from the stored one by copying the byte ranges
+of every unchanged document and posting list. The file is still replaced
+whole, by the same temporary-name-and-rename as a build, so a reader never
+sees a half-patched index; what no longer happens is decoding fifty thousand
+documents into Python objects to change one.
 """
 
 from __future__ import annotations
@@ -243,8 +251,11 @@ class MutableIndex:
 
     Postings are per-term sorted arrays of document ordinals, so removing one
     document costs a binary search and a memmove per term it contains rather
-    than a pass over the whole index. That is what makes an incremental update
-    after a single capture proportional to the entry, not to the vault.
+    than a pass over the whole index. Loading a stored index into this form
+    and serialising it again is still a pass over every document, though, so
+    after a small change :func:`refresh` replays the same operations through
+    :class:`_IndexPatch` instead and keeps this form for full builds and for
+    large change sets.
     """
 
     def __init__(self) -> None:
@@ -399,38 +410,69 @@ class MutableIndex:
                 (name, value if isinstance(value, bytes) else value.tobytes())
             )
 
-        payload = b"".join(blob for _, blob in sections)
-        header = {
-            "format": INDEX_FORMAT,
-            "byte_order": sys.byteorder,
-            "item_sizes": {
-                _ORDINAL: array.array(_ORDINAL).itemsize,
-                _OFFSET: array.array(_OFFSET).itemsize,
-            },
-            "data_root": str(data_root),
-            "built_at": _iso(built_at_ns),
-            "built_at_ns": built_at_ns,
-            "registry_fingerprint": fingerprint,
-            "signature_digest": signature.digest,
-            "document_slots": len(self.slots),
-            "live_documents": self.live,
-            "total_length": self.total_length,
-            "vocabulary_size": len(self.vocabulary),
-            "unreadable": [
-                {"path": path, "mtime_ns": mtime, "size": size}
-                for path, (mtime, size) in sorted(self.unreadable.items())
-            ],
-            "payload_bytes": len(payload),
-            "payload_sha256": hashlib.sha256(payload).hexdigest(),
-            "sections": [
-                {"name": name, "bytes": len(blob)} for name, blob in sections
-            ],
-        }
-        return (
-            json.dumps(header, ensure_ascii=False, sort_keys=True).encode("utf-8")
-            + b"\n"
-            + payload
+        return _encode_index(
+            sections,
+            data_root=data_root,
+            fingerprint=fingerprint,
+            signature=signature,
+            built_at_ns=built_at_ns,
+            document_slots=len(self.slots),
+            live_documents=self.live,
+            total_length=self.total_length,
+            vocabulary_size=len(self.vocabulary),
+            unreadable=self.unreadable,
         )
+
+
+def _encode_index(
+    sections: list[tuple[str, bytes]],
+    *,
+    data_root: Path,
+    fingerprint: str,
+    signature: VaultSignature,
+    built_at_ns: int,
+    document_slots: int,
+    live_documents: int,
+    total_length: int,
+    vocabulary_size: int,
+    unreadable: dict[str, tuple[int, int]],
+) -> bytes:
+    """Frame finished sections as an index file: one JSON header line, payload.
+
+    Shared by :meth:`MutableIndex.serialize` and the patch path in
+    :func:`refresh`, so the two cannot disagree about a header field.
+    """
+
+    payload = b"".join(blob for _, blob in sections)
+    header = {
+        "format": INDEX_FORMAT,
+        "byte_order": sys.byteorder,
+        "item_sizes": {
+            _ORDINAL: array.array(_ORDINAL).itemsize,
+            _OFFSET: array.array(_OFFSET).itemsize,
+        },
+        "data_root": str(data_root),
+        "built_at": _iso(built_at_ns),
+        "built_at_ns": built_at_ns,
+        "registry_fingerprint": fingerprint,
+        "signature_digest": signature.digest,
+        "document_slots": document_slots,
+        "live_documents": live_documents,
+        "total_length": total_length,
+        "vocabulary_size": vocabulary_size,
+        "unreadable": [
+            {"path": path, "mtime_ns": mtime, "size": size}
+            for path, (mtime, size) in sorted(unreadable.items())
+        ],
+        "payload_bytes": len(payload),
+        "payload_sha256": hashlib.sha256(payload).hexdigest(),
+        "sections": [{"name": name, "bytes": len(blob)} for name, blob in sections],
+    }
+    return (
+        json.dumps(header, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        + b"\n"
+        + payload
+    )
 
 
 def _iso(nanoseconds: int) -> str:
@@ -533,9 +575,25 @@ class StoredIndex:
         separate array of ids, which an insert shifts with one memmove.
         """
 
+        return self._vocabulary_position(term.encode("utf-8", "surrogatepass"))[1]
+
+    def _vocabulary_position(self, encoded: bytes) -> tuple[int, int | None]:
+        """Where ``encoded`` is, or would go, in ``vocabulary_sorted``.
+
+        Returns ``(position, term id or None)``. The search compares UTF-8
+        bytes while the sorted view was produced by sorting ``str``; the two
+        orders agree for every string ``surrogatepass`` can encode. UTF-8
+        assigns longer sequences to higher code points, lays out the bits of
+        each sequence most significant first, and is prefix-free, so the first
+        differing byte of two encodings lies inside the encodings of the first
+        differing code points and orders them as the code points are ordered.
+        ``surrogatepass`` encodes a lone surrogate with that same three-byte
+        rule (``ED A0 80`` to ``ED BF BF``), between ``U+D7FF`` and ``U+E000``
+        where its code point sorts.
+        """
+
         order = self._whole("vocabulary_sorted", _ORDINAL)
         offsets = self._whole("vocabulary_offsets", _OFFSET)
-        encoded = term.encode("utf-8", "surrogatepass")
         low, high = 0, len(order)
         while low < high:
             check_deadline()
@@ -549,8 +607,8 @@ class StoredIndex:
             elif candidate > encoded:
                 high = middle
             else:
-                return int(identifier)
-        return None
+                return middle, int(identifier)
+        return low, None
 
     def postings(self, term: str) -> tuple[Sequence[int], Sequence[int]] | None:
         identifier = self.term_id(term)
@@ -637,16 +695,74 @@ class StoredIndex:
             mutable.by_path[path] = ordinal
             mutable.total_length += int(lengths[ordinal])
             mutable.live += 1
+        mutable.unreadable.update(self.declared_unreadable())
+        return mutable
+
+    def declared_unreadable(self) -> dict[str, tuple[int, int]]:
+        """The header's unreadable files with the signature each was seen at."""
+
+        found: dict[str, tuple[int, int]] = {}
         declared = self.header.get("unreadable")
         if isinstance(declared, list):
             for item in declared:
                 check_deadline()
                 if isinstance(item, dict):
-                    mutable.unreadable[str(item["path"])] = (
+                    found[str(item["path"])] = (
                         int(item["mtime_ns"]),
                         int(item["size"]),
                     )
-        return mutable
+        return found
+
+    def free_slots(self) -> list[int]:
+        """The free ordinals in ascending order, as ``to_mutable`` lists them.
+
+        Found with ``array.index`` from the previous hit, so the cost is one
+        C-level pass over the lengths however many slots are free.
+        """
+
+        lengths = self._whole("document_lengths", _ORDINAL)
+        free: list[int] = []
+        position = -1
+        for _ in range(lengths.count(FREE_SLOT)):
+            check_deadline()
+            position = lengths.index(FREE_SLOT, position + 1)
+            free.append(position)
+        return free
+
+    def slot_paths(self) -> dict[str, int]:
+        """Map the path of every live slot to its ordinal.
+
+        Decodes the path half of each ``strings`` record and nothing else --
+        no entry id, no forward terms, no ``DocumentSlot`` -- which is what
+        lets a refresh find out what changed without paying for the documents
+        that did not. A path repeated across slots maps to the last one, as
+        ``to_mutable``'s ``by_path`` does.
+        """
+
+        lengths = self._whole("document_lengths", _ORDINAL)
+        offsets = self._whole("string_offsets", _OFFSET)
+        if len(lengths) != self.slot_count or len(offsets) != self.slot_count + 1:
+            raise IndexUnusable("unreadable", "index slot tables disagree in length")
+        start, stop = self._bounds["strings"]
+        raw = self._payload[start:stop]
+        if offsets[-1] != len(raw):
+            raise IndexUnusable("unreadable", "index string table is out of range")
+        check_deadline()
+        spans = enumerate(zip(offsets[:-1], offsets[1:], strict=True))
+        if raw.isascii():
+            # Byte offsets are character offsets in ASCII, so one decode
+            # replaces fifty thousand small ones.
+            text = raw.decode("ascii")
+            return {
+                text[begin:end].partition("\n")[0]: ordinal
+                for ordinal, (begin, end) in spans
+                if lengths[ordinal] != FREE_SLOT
+            }
+        return {
+            raw[begin:end].partition(b"\n")[0].decode("utf-8", "surrogatepass"): ordinal
+            for ordinal, (begin, end) in spans
+            if lengths[ordinal] != FREE_SLOT
+        }
 
     def signatures(self) -> dict[str, tuple[int, int]]:
         lengths = self._whole("document_lengths", _ORDINAL)
@@ -657,15 +773,7 @@ class StoredIndex:
             for ordinal in range(self.slot_count)
             if lengths[ordinal] != FREE_SLOT
         }
-        declared = self.header.get("unreadable")
-        if isinstance(declared, list):
-            for item in declared:
-                check_deadline()
-                if isinstance(item, dict):
-                    found[str(item["path"])] = (
-                        int(item["mtime_ns"]),
-                        int(item["size"]),
-                    )
+        found.update(self.declared_unreadable())
         return found
 
 
@@ -804,6 +912,461 @@ class RefreshReport:
     vocabulary_size: int
     bytes_written: int
     seconds: float
+    # How the file was produced: ``rebuilt`` from the vault alone, ``patched``
+    # by splicing the stored payload, ``full`` by decoding the stored index
+    # into a ``MutableIndex``, or ``unchanged`` when the stored index already
+    # matched the vault and nothing was written. Not printed by any command;
+    # it exists so a test can tell which path produced a file.
+    strategy: str
+
+
+# The patch path is taken for a change set of at most this many vanished plus
+# changed files, or 2 % of the live documents when that is larger. That is
+# deliberately well below the crossover: at 50,000 entries splicing was still
+# faster with 5,000 changed files (1.57 s against 1.75 s) and slower only at
+# 20,000, because by then both paths are dominated by parsing the changed
+# files. Past a few percent the patch saves little, so a bulk import or a sync
+# that touched many files goes through ``to_mutable``, the code every full
+# build exercises.
+PATCH_MINIMUM = 64
+PATCH_DIVISOR = 50
+
+
+def patch_limit(live_documents: int) -> int:
+    return max(PATCH_MINIMUM, live_documents // PATCH_DIVISOR)
+
+
+@dataclass(frozen=True)
+class _Changes:
+    """What moved between the stored index and the vault, in refresh order."""
+
+    previous: dict[str, tuple[int, int]]
+    ordinals: dict[str, int]
+    vanished: list[str]
+    changed: list[tuple[str, tuple[int, int]]]
+
+
+def _changes(stored: StoredIndex | None, signature: VaultSignature) -> _Changes:
+    """Diff the stored signatures against a fresh scan without building slots.
+
+    Files that could not be parsed are tracked with a signature too, so a
+    repaired entry is noticed the same way an edited one is.
+    """
+
+    current = signature.signatures
+    if stored is None:
+        return _Changes({}, {}, [], sorted(current.items()))
+    ordinals = stored.slot_paths()
+    mtimes = stored._whole("document_mtime_ns", _OFFSET)
+    sizes = stored._whole("document_size", _OFFSET)
+    if len(mtimes) != stored.slot_count or len(sizes) != stored.slot_count:
+        raise IndexUnusable("unreadable", "index slot tables disagree in length")
+    previous = {
+        path: (mtimes[ordinal], sizes[ordinal]) for path, ordinal in ordinals.items()
+    }
+    previous.update(stored.declared_unreadable())
+    check_deadline()
+    seen = previous.items()
+    return _Changes(
+        previous=previous,
+        ordinals=ordinals,
+        vanished=sorted(previous.keys() - current.keys()),
+        changed=sorted(item for item in current.items() if item not in seen),
+    )
+
+
+def _shifted(target: array.array, values: array.array, delta: int) -> None:
+    check_deadline()
+    if delta:
+        target.extend([value + delta for value in values])
+    else:
+        target.extend(values)
+
+
+def _spliced_offsets(
+    offsets: array.array, sizes: dict[int, int], count: int
+) -> array.array:
+    """Rebuild an offsets array after the items in ``sizes`` changed length.
+
+    ``offsets`` has one entry per old item plus the end; ``sizes`` holds the
+    new item count of every replaced item and of every appended one up to
+    ``count``. Between two replaced items the old offsets only shift by a
+    constant, so each run is copied and shifted by that constant.
+    """
+
+    old = len(offsets) - 1
+    result = array.array(_OFFSET)
+    delta = done = 0
+    for index in sorted(sizes):
+        if index >= old:
+            break
+        _shifted(result, offsets[done : index + 1], delta)
+        delta += sizes[index] - (offsets[index + 1] - offsets[index])
+        done = index + 1
+    _shifted(result, offsets[done:], delta)
+    position = result[-1]
+    for index in range(old, count):
+        position += sizes[index]
+        result.append(position)
+    return result
+
+
+def _spliced_data(
+    blob: memoryview,
+    offsets: array.array,
+    itemsize: int,
+    replacements: dict[int, bytes],
+    count: int,
+) -> bytes:
+    """Copy the unchanged byte ranges of a section around the replaced items."""
+
+    old = len(offsets) - 1
+    pieces: list[bytes | memoryview] = []
+    done = 0
+    for index in sorted(replacements):
+        if index >= old:
+            break
+        check_deadline()
+        pieces.append(blob[offsets[done] * itemsize : offsets[index] * itemsize])
+        pieces.append(replacements[index])
+        done = index + 1
+    pieces.append(blob[offsets[done] * itemsize : offsets[old] * itemsize])
+    pieces.extend(replacements[index] for index in range(old, count))
+    return b"".join(pieces)
+
+
+class _IndexPatch:
+    """``MutableIndex.remove``/``add`` replayed over a stored payload.
+
+    The point is what it does not do. ``to_mutable`` turns every document of
+    the vault into a ``DocumentSlot`` and every term into a posting array, and
+    ``serialize`` takes all of them apart again, for a capture that touches
+    one slot and a few dozen terms. This holds only the slots and posting
+    lists the change set reaches and builds the new payload by copying the
+    stored bytes around them.
+
+    It reproduces ``MutableIndex`` exactly, not approximately: the same free
+    list in the same order, the same slot for a re-added path, the same term
+    ids in the same first-seen order, the same sorted vocabulary. The equality
+    is tested byte for byte against the ``to_mutable`` path, which stays in
+    place as the fallback for anything this does not take on.
+    """
+
+    def __init__(self, stored: StoredIndex, ordinals: dict[str, int]) -> None:
+        self.stored = stored
+        self.stored_slots = stored.slot_count
+        self.stored_terms = stored.vocabulary_size
+        self.slot_count = stored.slot_count
+        self.free = stored.free_slots()
+        self.by_path = dict(ordinals)
+        self.unreadable = stored.declared_unreadable()
+        self.total_length = stored.total_length
+        self.live = stored.document_count
+        self.slots: dict[int, DocumentSlot | None] = {}
+        self.postings: dict[int, tuple[array.array, array.array]] = {}
+        self.term_ids: dict[str, int] = {}
+        self.new_terms: list[str] = []
+
+    @classmethod
+    def open(cls, stored: StoredIndex, ordinals: dict[str, int]) -> _IndexPatch | None:
+        """Return a patch over ``stored``, or ``None`` to use ``to_mutable``.
+
+        Splicing trusts the section tables to be what ``serialize`` writes.
+        These checks are what that trust rests on, and they are cheap: lengths
+        and end offsets, no pass over the items. Tables that disagree with the
+        header's counts raise :class:`IndexUnusable`, because ``to_mutable``
+        could not read them either. ``to_mutable`` does recount the live
+        documents and their total length from the slots, so header figures
+        that disagree with that recount send the refresh there instead.
+        """
+
+        slots, terms = stored.slot_count, stored.vocabulary_size
+        expected = {
+            "document_lengths": (_ORDINAL, slots),
+            "document_mtime_ns": (_OFFSET, slots),
+            "document_size": (_OFFSET, slots),
+            "forward_offsets": (_OFFSET, slots + 1),
+            "string_offsets": (_OFFSET, slots + 1),
+            "postings_offsets": (_OFFSET, terms + 1),
+            "vocabulary_offsets": (_OFFSET, terms + 1),
+            "vocabulary_sorted": (_ORDINAL, terms),
+        }
+        for name, (typecode, count) in expected.items():
+            if len(stored._whole(name, typecode)) != count:
+                raise IndexUnusable("unreadable", f"index section {name} is torn")
+        for data, typecode, offsets in (
+            ("forward_terms", _ORDINAL, "forward_offsets"),
+            ("strings", "B", "string_offsets"),
+            ("postings_documents", _ORDINAL, "postings_offsets"),
+            ("postings_frequencies", _COUNTER, "postings_offsets"),
+            ("vocabulary", "B", "vocabulary_offsets"),
+        ):
+            table = stored._whole(offsets, _OFFSET)
+            start, stop = stored._bounds[data]
+            itemsize = array.array(typecode).itemsize
+            if table[0] != 0 or table[-1] * itemsize != stop - start:
+                raise IndexUnusable("unreadable", f"index section {data} is torn")
+        patch = cls(stored, ordinals)
+        lengths = stored._whole("document_lengths", _ORDINAL)
+        live = slots - len(patch.free)
+        if (
+            len(ordinals) != live
+            or stored.document_count != live
+            or stored.total_length != sum(lengths) - FREE_SLOT * len(patch.free)
+        ):
+            return None
+        return patch
+
+    # -- the MutableIndex operations, over lazily loaded state ------------
+
+    def _slot(self, ordinal: int) -> DocumentSlot:
+        # ``by_path`` only ever names a live slot, so a slot this refresh
+        # already touched is one it added, never one it freed.
+        return self.slots.get(ordinal) or self._stored_slot(ordinal)
+
+    def _stored_slot(self, ordinal: int) -> DocumentSlot:
+        stored = self.stored
+        path, entry_id = stored.document(ordinal)
+        forward = stored._whole("forward_offsets", _OFFSET)
+        return DocumentSlot(
+            path=path,
+            entry_id=entry_id,
+            mtime_ns=int(stored._whole("document_mtime_ns", _OFFSET)[ordinal]),
+            size=int(stored._whole("document_size", _OFFSET)[ordinal]),
+            length=int(stored._whole("document_lengths", _ORDINAL)[ordinal]),
+            terms=list(
+                stored._items(
+                    "forward_terms",
+                    _ORDINAL,
+                    forward[ordinal],
+                    forward[ordinal + 1],
+                )
+            ),
+        )
+
+    def _postings(self, term_id: int) -> tuple[array.array, array.array]:
+        found = self.postings.get(term_id)
+        if found is None:
+            offsets = self.stored._whole("postings_offsets", _OFFSET)
+            start, stop = offsets[term_id], offsets[term_id + 1]
+            found = (
+                self.stored._items("postings_documents", _ORDINAL, start, stop),
+                self.stored._items("postings_frequencies", _COUNTER, start, stop),
+            )
+            self.postings[term_id] = found
+        return found
+
+    def _term_id(self, term: str) -> int:
+        identifier = self.term_ids.get(term)
+        if identifier is None:
+            identifier = self.stored.term_id(term)
+            if identifier is None:
+                identifier = self.stored_terms + len(self.new_terms)
+                self.new_terms.append(term)
+                self.postings[identifier] = (
+                    array.array(_ORDINAL),
+                    array.array(_COUNTER),
+                )
+            self.term_ids[term] = identifier
+        return identifier
+
+    def remove(self, relative: str) -> None:
+        ordinal = self.by_path.pop(relative, None)
+        self.unreadable.pop(relative, None)
+        if ordinal is None:
+            return
+        slot = self._slot(ordinal)
+        for term_id in slot.terms:
+            check_deadline()
+            postings, frequencies = self._postings(term_id)
+            position = bisect.bisect_left(postings, ordinal)
+            if position < len(postings) and postings[position] == ordinal:
+                postings.pop(position)
+                frequencies.pop(position)
+        self.total_length -= slot.length
+        self.live -= 1
+        self.slots[ordinal] = None
+        self.free.append(ordinal)
+
+    def add(
+        self,
+        relative: str,
+        entry_id: str,
+        mtime_ns: int,
+        size: int,
+        frequencies: Counter[str],
+    ) -> None:
+        ordinal = self.free.pop() if self.free else self.slot_count
+        if ordinal == self.slot_count:
+            self.slot_count += 1
+        length = sum(frequencies.values())
+        term_ids: list[int] = []
+        for term, count in frequencies.items():
+            check_deadline()
+            term_id = self._term_id(term)
+            term_ids.append(term_id)
+            postings, counts = self._postings(term_id)
+            position = bisect.bisect_left(postings, ordinal)
+            postings.insert(position, ordinal)
+            counts.insert(position, count)
+        term_ids.sort()
+        self.slots[ordinal] = DocumentSlot(
+            path=relative,
+            entry_id=entry_id,
+            mtime_ns=mtime_ns,
+            size=size,
+            length=length,
+            terms=term_ids,
+        )
+        self.by_path[relative] = ordinal
+        self.total_length += length
+        self.live += 1
+
+    def mark_unreadable(self, relative: str, mtime_ns: int, size: int) -> None:
+        self.unreadable[relative] = (mtime_ns, size)
+
+    # -- the new payload ----------------------------------------------------
+
+    def sections(self) -> list[tuple[str, bytes]]:
+        stored = self.stored
+        payload = memoryview(stored._payload)
+
+        def section(name: str) -> memoryview:
+            start, stop = stored._bounds[name]
+            return payload[start:stop]
+
+        appended = self.slot_count - self.stored_slots
+        lengths = stored._whole("document_lengths", _ORDINAL)[:]
+        mtimes = stored._whole("document_mtime_ns", _OFFSET)[:]
+        sizes = stored._whole("document_size", _OFFSET)[:]
+        lengths.extend([FREE_SLOT] * appended)
+        mtimes.extend([0] * appended)
+        sizes.extend([0] * appended)
+        forward: dict[int, bytes] = {}
+        strings: dict[int, bytes] = {}
+        for ordinal, slot in self.slots.items():
+            check_deadline()
+            if slot is None:
+                lengths[ordinal], mtimes[ordinal], sizes[ordinal] = FREE_SLOT, 0, 0
+                forward[ordinal] = strings[ordinal] = b""
+            else:
+                lengths[ordinal] = slot.length
+                mtimes[ordinal] = slot.mtime_ns
+                sizes[ordinal] = slot.size
+                forward[ordinal] = array.array(_ORDINAL, slot.terms).tobytes()
+                strings[ordinal] = f"{slot.path}\n{slot.entry_id}".encode(
+                    "utf-8", "surrogatepass"
+                )
+
+        ordinal_size = array.array(_ORDINAL).itemsize
+        counter_size = array.array(_COUNTER).itemsize
+        forward_offsets = stored._whole("forward_offsets", _OFFSET)
+        string_offsets = stored._whole("string_offsets", _OFFSET)
+        postings_offsets = stored._whole("postings_offsets", _OFFSET)
+
+        term_count = self.stored_terms + len(self.new_terms)
+        documents = {
+            term_id: postings.tobytes()
+            for term_id, (postings, _) in self.postings.items()
+        }
+        counters = {
+            term_id: counts.tobytes() for term_id, (_, counts) in self.postings.items()
+        }
+
+        encoded = [term.encode("utf-8", "surrogatepass") for term in self.new_terms]
+        vocabulary_offsets = stored._whole("vocabulary_offsets", _OFFSET)[:]
+        for blob in encoded:
+            vocabulary_offsets.append(vocabulary_offsets[-1] + len(blob))
+        vocabulary_sorted = stored._whole("vocabulary_sorted", _ORDINAL)[:]
+        # Each new id goes where ``sorted(range(V), key=vocabulary.__getitem__)``
+        # puts it. Inserting from the highest position down leaves the lower
+        # positions valid, and new terms that share a position are inserted in
+        # descending order so that they end up ascending.
+        placed = sorted(
+            (
+                (self.stored._vocabulary_position(blob)[0], blob, identifier)
+                for identifier, blob in enumerate(encoded, start=self.stored_terms)
+            ),
+            reverse=True,
+        )
+        for position, _, identifier in placed:
+            check_deadline()
+            vocabulary_sorted.insert(position, identifier)
+
+        return [
+            (
+                "postings_documents",
+                _spliced_data(
+                    section("postings_documents"),
+                    postings_offsets,
+                    ordinal_size,
+                    documents,
+                    term_count,
+                ),
+            ),
+            (
+                "postings_frequencies",
+                _spliced_data(
+                    section("postings_frequencies"),
+                    postings_offsets,
+                    counter_size,
+                    counters,
+                    term_count,
+                ),
+            ),
+            (
+                "postings_offsets",
+                _spliced_offsets(
+                    postings_offsets,
+                    {
+                        term_id: len(postings)
+                        for term_id, (postings, _) in self.postings.items()
+                    },
+                    term_count,
+                ).tobytes(),
+            ),
+            ("document_lengths", lengths.tobytes()),
+            ("document_mtime_ns", mtimes.tobytes()),
+            ("document_size", sizes.tobytes()),
+            (
+                "forward_terms",
+                _spliced_data(
+                    section("forward_terms"),
+                    forward_offsets,
+                    ordinal_size,
+                    forward,
+                    self.slot_count,
+                ),
+            ),
+            (
+                "forward_offsets",
+                _spliced_offsets(
+                    forward_offsets,
+                    {
+                        ordinal: len(blob) // ordinal_size
+                        for ordinal, blob in forward.items()
+                    },
+                    self.slot_count,
+                ).tobytes(),
+            ),
+            (
+                "strings",
+                _spliced_data(
+                    section("strings"), string_offsets, 1, strings, self.slot_count
+                ),
+            ),
+            (
+                "string_offsets",
+                _spliced_offsets(
+                    string_offsets,
+                    {ordinal: len(blob) for ordinal, blob in strings.items()},
+                    self.slot_count,
+                ).tobytes(),
+            ),
+            ("vocabulary", bytes(section("vocabulary")) + b"".join(encoded)),
+            ("vocabulary_offsets", vocabulary_offsets.tobytes()),
+            ("vocabulary_sorted", vocabulary_sorted.tobytes()),
+        ]
 
 
 def refresh(
@@ -812,6 +1375,7 @@ def refresh(
     registry: SchemaRegistry,
     *,
     force: bool = False,
+    patch: bool | None = None,
 ) -> RefreshReport:
     """Bring the stored index in line with the vault and write it.
 
@@ -819,6 +1383,16 @@ def refresh(
     ``VaultIndex``: the whole point of an incremental refresh is to touch only
     the files whose ``(mtime_ns, size)`` moved, so pulling in a full scan
     would defeat it.
+
+    The cost is meant to follow the change, not the vault. A stored index
+    whose signature digest already equals the scan is left alone. A small
+    change set is spliced into the stored payload by :class:`_IndexPatch`;
+    a large one, or an index the patch declines, goes through
+    ``to_mutable`` and ``serialize``, which produce the same bytes. The file
+    itself is still replaced whole, atomically, because readers rely on that.
+
+    ``patch`` exists for tests: ``True`` splices whatever the size of the
+    change set, ``False`` never splices, ``None`` applies :func:`patch_limit`.
     """
 
     started = time.perf_counter()
@@ -826,7 +1400,7 @@ def refresh(
     fingerprint = registry_fingerprint(registry)
     signature = scan_signatures(root)
 
-    mutable: MutableIndex | None = None
+    stored: StoredIndex | None = None
     reason = "rebuilt"
     if not force:
         try:
@@ -835,57 +1409,96 @@ def refresh(
             reason = exc.state
         else:
             if stored.header.get("data_root") != str(root):
-                reason = "stale_data_root"
+                reason, stored = "stale_data_root", None
             elif stored.header.get("registry_fingerprint") != fingerprint:
-                reason = "stale_registry"
+                reason, stored = "stale_registry", None
             else:
-                mutable = stored.to_mutable()
                 reason = "incremental"
 
-    added = updated = removed = 0
-    if mutable is None:
-        mutable = MutableIndex()
-        previous: dict[str, tuple[int, int]] = {}
-    else:
-        previous = {
-            slot.path: (slot.mtime_ns, slot.size)
-            for slot in mutable.slots
-            if slot is not None
-        }
-        # Files that could not be parsed are tracked with a signature too, so
-        # a repaired entry is noticed the same way an edited one is.
-        previous.update(mutable.unreadable)
+    if stored is not None and stored.header.get("signature_digest") == (
+        signature.digest
+    ):
+        # The digest covers every path with its signature, unreadable files
+        # included, so an equal digest means the loop below would change
+        # nothing; rewriting the file would only move ``built_at``.
+        return RefreshReport(
+            added=0,
+            updated=0,
+            removed=0,
+            rebuilt=False,
+            reason=reason,
+            document_count=stored.document_count,
+            vocabulary_size=stored.vocabulary_size,
+            bytes_written=0,
+            seconds=time.perf_counter() - started,
+            strategy="unchanged",
+        )
 
-    for relative in sorted(set(previous) - set(signature.signatures)):
+    target: MutableIndex | _IndexPatch | None = None
+    changes: _Changes | None = None
+    strategy = "rebuilt"
+    if stored is not None:
+        try:
+            changes = _changes(stored, signature)
+            affected = len(changes.vanished) + len(changes.changed)
+            if patch is True or (
+                patch is None and affected <= patch_limit(stored.document_count)
+            ):
+                target = _IndexPatch.open(stored, changes.ordinals)
+        except IndexUnusable as exc:
+            # Section tables that disagree with the header. The header sits
+            # outside the payload checksum, and neither path can use them.
+            reason, changes = exc.state, None
+        else:
+            strategy = "full" if target is None else "patched"
+            if target is None:
+                target = stored.to_mutable()
+    if target is None or changes is None:
+        target, changes = MutableIndex(), _changes(None, signature)
+
+    added = updated = removed = 0
+    for relative in changes.vanished:
         check_deadline()
-        mutable.remove(relative)
+        target.remove(relative)
         removed += 1
 
-    for relative, current in sorted(signature.signatures.items()):
+    for relative, current in changes.changed:
         check_deadline()
-        if previous.get(relative) == current:
-            continue
-        existed = relative in previous
-        mutable.remove(relative)
+        existed = relative in changes.previous
+        target.remove(relative)
         parsed = _document_frequencies(root / relative, registry)
         if parsed is None:
-            mutable.mark_unreadable(relative, current[0], current[1])
+            target.mark_unreadable(relative, current[0], current[1])
         else:
             entry_id, frequencies = parsed
-            mutable.add(
-                relative, entry_id, current[0], current[1], frequencies
-            )
+            target.add(relative, entry_id, current[0], current[1], frequencies)
         if existed:
             updated += 1
         else:
             added += 1
 
-    blob = mutable.serialize(
-        data_root=root,
-        fingerprint=fingerprint,
-        signature=signature,
-        built_at_ns=built_at_ns,
-    )
+    if isinstance(target, _IndexPatch):
+        blob = _encode_index(
+            target.sections(),
+            data_root=root,
+            fingerprint=fingerprint,
+            signature=signature,
+            built_at_ns=built_at_ns,
+            document_slots=target.slot_count,
+            live_documents=target.live,
+            total_length=target.total_length,
+            vocabulary_size=target.stored_terms + len(target.new_terms),
+            unreadable=target.unreadable,
+        )
+        vocabulary_size = target.stored_terms + len(target.new_terms)
+    else:
+        blob = target.serialize(
+            data_root=root,
+            fingerprint=fingerprint,
+            signature=signature,
+            built_at_ns=built_at_ns,
+        )
+        vocabulary_size = len(target.vocabulary)
     write_index(layout, blob)
     return RefreshReport(
         added=added,
@@ -893,10 +1506,11 @@ def refresh(
         removed=removed,
         rebuilt=reason != "incremental",
         reason=reason,
-        document_count=mutable.live,
-        vocabulary_size=len(mutable.vocabulary),
+        document_count=target.live,
+        vocabulary_size=vocabulary_size,
         bytes_written=len(blob),
         seconds=time.perf_counter() - started,
+        strategy=strategy,
     )
 
 

@@ -26,15 +26,19 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from typing import Any
 import unittest
 
 from noetrail import cli
 from noetrail.errors import InvalidRequest, StorageError
 from noetrail.index import (
+    RefreshReport,
     VaultSignature,
     index_path,
     open_for_search,
+    patch_limit,
     read_index,
+    refresh,
     scan_signatures,
 )
 from noetrail.layout import resolve_layout
@@ -112,6 +116,27 @@ class ScoringTest(unittest.TestCase):
         source.add(term_frequencies("basalt " + " ".join(f"w{i}" for i in range(50))))
         scores = score_query(source, ["basalt"])
         self.assertGreater(scores[0], scores[1])
+
+
+class VocabularyOrderTest(unittest.TestCase):
+    def test_utf8_byte_order_is_code_point_order(self) -> None:
+        """What ``StoredIndex.term_id`` and the patch path's sorted insert assume.
+
+        ``vocabulary_sorted`` is written by sorting ``str`` and searched by
+        comparing ``surrogatepass`` bytes. The boundaries of every UTF-8
+        sequence length, and the lone surrogates ``surrogatepass`` lets
+        through, are where the two orders could part; they do not.
+        """
+
+        boundaries = [
+            0x00, 0x41, 0x7F, 0x80, 0x7FF, 0x800, 0xD7FF, 0xD800, 0xDBFF,
+            0xDC00, 0xDFFF, 0xE000, 0xFFFD, 0xFFFF, 0x10000, 0x10FFFF,
+        ]
+        words = [chr(point) for point in boundaries]
+        words += [first + second for first in words for second in words]
+        by_text = sorted(words)
+        by_bytes = sorted(words, key=lambda word: word.encode("utf-8", "surrogatepass"))
+        self.assertEqual(by_text, by_bytes)
 
 
 class VaultHarness:
@@ -590,6 +615,329 @@ class IndexedVaultTest(VaultHarness, unittest.TestCase):
                 actual = scan_signatures(root)
                 self.assertEqual(actual.signatures, expected.signatures)
                 self.assertEqual(actual.digest, expected.digest)
+
+
+def _split_index(blob: bytes) -> tuple[dict[str, Any], bytes]:
+    """Header without the build time, and the payload, of one index file."""
+
+    header, _, payload = blob.partition(b"\n")
+    decoded = json.loads(header)
+    decoded.pop("built_at")
+    decoded.pop("built_at_ns")
+    return decoded, payload
+
+
+class PatchedRefreshTest(VaultHarness, unittest.TestCase):
+    """The spliced refresh produces the bytes the ``to_mutable`` path produces.
+
+    Not "an equivalent index": the same payload and the same header apart from
+    the build time, after every kind of change a vault goes through. The
+    ``to_mutable`` path is the oracle because it is the one a full build runs
+    too, and ``test_an_incremental_refresh_matches_a_full_rebuild`` already
+    holds it to the meaning of a rebuild.
+    """
+
+    QUERIES = (
+        "bitter",
+        "espresso extraction bitter",
+        "harbour lantern",
+        "quernstone vellum",
+        "café ölmühle 日本語",
+        "aardvark zyzzyva",
+        "",
+    )
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.identifiers = self.seed()
+        self.json_cli("index", "rebuild")
+
+    def stored(self) -> Path:
+        return index_path(self.layout())
+
+    def entry(self, identifier: str) -> Path:
+        return next(
+            path
+            for path in entry_paths(self.data)
+            if identifier in path.read_text(encoding="utf-8", errors="replace")
+        )
+
+    def refresh_from(
+        self, before: bytes, patch: bool | None
+    ) -> tuple[RefreshReport, bytes]:
+        layout = self.layout()
+        self.stored().write_bytes(before)
+        report = refresh(layout.data_root, layout, self.registry(), patch=patch)
+        return report, self.stored().read_bytes()
+
+    def step(self, change: Any, *, through_cli: bool = True) -> RefreshReport:
+        """Apply one change and compare every way of refreshing after it.
+
+        ``through_cli`` changes go through a mutating command, which refreshes
+        the index itself; that file is compared too. Out-of-band changes --
+        an editor, a sync client, a broken file -- have no command, so only
+        the three direct refreshes are compared.
+        """
+
+        before = self.stored().read_bytes()
+        change()
+        written = self.stored().read_bytes()
+        full_report, full = self.refresh_from(before, False)
+        patch_report, patched = self.refresh_from(before, True)
+        auto_report, automatic = self.refresh_from(before, None)
+
+        self.assertEqual(full_report.strategy, "full")
+        self.assertEqual(patch_report.strategy, "patched")
+        self.assertEqual(auto_report.strategy, "patched")
+        expected = _split_index(full)
+        self.assertEqual(_split_index(patched), expected)
+        self.assertEqual(_split_index(automatic), expected)
+        if through_cli:
+            self.assertNotEqual(written, before, "the command did not refresh")
+            self.assertEqual(_split_index(written), expected)
+        for name in (
+            "added",
+            "updated",
+            "removed",
+            "rebuilt",
+            "reason",
+            "document_count",
+            "vocabulary_size",
+            "bytes_written",
+        ):
+            self.assertEqual(
+                getattr(patch_report, name), getattr(full_report, name), name
+            )
+        self.assertEqual(self.index_state()["state"], "fresh")
+        return patch_report
+
+    def answers(self) -> list[dict]:
+        return [self.search("--rank", "bm25", "--", query) for query in self.QUERIES]
+
+    def test_every_kind_of_change_patches_to_the_full_refresh_bytes(self) -> None:
+        notes = self.data / "vault" / "notes"
+
+        # New entries with new vocabulary that sorts before, between and after
+        # the existing words, in more than one script.
+        report = self.step(
+            lambda: self.capture("Aardvark ledger", "aardvark zyzzyva mmmidway")
+        )
+        self.assertEqual((report.added, report.updated, report.removed), (1, 0, 0))
+        self.step(lambda: self.capture("Café Ölmühle", "日本語 テスト ölmühle café"))
+        self.step(
+            lambda: self.capture("Harbour lantern", "harbour lantern bitter vellum")
+        )
+
+        # An edit that drops words and adds others, and one through tags.
+        patch_file = self.base / "update.json"
+        patch_file.write_text(
+            json.dumps(
+                {
+                    "title": "Chain wear revisited",
+                    "replace_body": "Quernstone and vellum, nothing about cassettes.",
+                }
+            ),
+            encoding="utf-8",
+        )
+        report = self.step(
+            lambda: self.json_cli(
+                "update",
+                self.identifiers["chain"],
+                "--patch-file",
+                str(patch_file),
+                "--allow-replace-body",
+            )
+        )
+        self.assertEqual((report.added, report.updated, report.removed), (0, 1, 0))
+        self.step(lambda: self.json_cli("tag", self.identifiers["salad"], "zymurgy"))
+        self.step(
+            lambda: self.json_cli(
+                "tag", self.identifiers["salad"], "zymurgy", "--remove"
+            )
+        )
+
+        # Deletions free slots; the next captures reuse them, last freed first.
+        self.step(lambda: self.json_cli("trash", self.identifiers["bitter"]))
+        self.step(lambda: self.json_cli("trash", self.identifiers["grinder"]))
+        before = read_index(self.layout())
+        self.assertEqual(before.slot_count - before.document_count, 2)
+        self.step(lambda: self.capture("Reused slot", "basalt cadence reused"))
+        self.step(lambda: self.capture("Second reuse", "basalt second reuse"))
+        after = read_index(self.layout())
+        self.assertEqual(after.slot_count, before.slot_count)
+        self.assertEqual(after.document_count, before.slot_count)
+
+        # A move: the old path vanishes and the new one is added in the same
+        # refresh, so the freed slot is taken straight back.
+        report = self.step(
+            lambda: self.json_cli(
+                "retype", self.identifiers["salad"], "--to", "recipe", "--apply"
+            )
+        )
+        self.assertEqual((report.added, report.updated, report.removed), (1, 0, 1))
+        self.step(lambda: self.json_cli("restore", self.identifiers["bitter"]))
+
+        # Out of band: a file whose path is not ASCII, a file that cannot be
+        # parsed and its repair, a rename, and several changes in one refresh.
+        source = self.entry(self.identifiers["chain"])
+        original = source.read_text(encoding="utf-8")
+        foreign = notes / "café-ünïcode-日本.md"
+        twin = original.replace(
+            self.identifiers["chain"], "kn_" + "0123456789abcdef" * 2
+        ).replace("Quernstone", "Quernstone ölmühle")
+
+        self.step(lambda: foreign.write_text(twin, encoding="utf-8"), through_cli=False)
+        readable = foreign.read_bytes()
+        self.step(
+            lambda: foreign.write_bytes(b"\xff\xfe not an entry"), through_cli=False
+        )
+        self.assertEqual(
+            read_index(self.layout()).unreadable,
+            [foreign.relative_to(self.data).as_posix()],
+        )
+        report = self.step(lambda: foreign.write_bytes(readable), through_cli=False)
+        self.assertEqual((report.added, report.updated, report.removed), (0, 1, 0))
+        self.assertEqual(read_index(self.layout()).unreadable, [])
+        renamed = notes / "renamed-by-hand.md"
+        self.step(lambda: foreign.rename(renamed), through_cli=False)
+
+        def several() -> None:
+            renamed.unlink()
+            source.write_text(
+                original.replace("Quernstone", "Obsidian trellis"), encoding="utf-8"
+            )
+            (notes / "aaa-first.md").write_text(
+                twin.replace("0123456789abcdef", "fedcba9876543210"),
+                encoding="utf-8",
+            )
+
+        report = self.step(several, through_cli=False)
+        self.assertEqual((report.added, report.updated, report.removed), (1, 1, 1))
+        self.step(lambda: self.capture("After all that", "final aardvark entry"))
+
+        # And the answers are the scan's answers.
+        self.assertIs(self.index_state("--verify")["verified"], True)
+        indexed = self.answers()
+        self.json_cli("index", "drop")
+        self.assertEqual(indexed, self.answers())
+
+    def test_an_unchanged_vault_is_not_rewritten(self) -> None:
+        stored = self.stored()
+        before = stored.read_bytes()
+        layout = self.layout()
+        report = refresh(layout.data_root, layout, self.registry())
+        self.assertEqual(report.strategy, "unchanged")
+        self.assertEqual(
+            (report.added, report.updated, report.removed, report.bytes_written),
+            (0, 0, 0, 0),
+        )
+        self.assertFalse(report.rebuilt)
+        self.assertEqual(report.document_count, 4)
+        self.assertEqual(stored.read_bytes(), before)
+
+    def test_index_rebuild_reports_an_index_that_needs_nothing(self) -> None:
+        """``bytes: 0`` has to read as "nothing to do", not as a failed write."""
+
+        stored = self.stored()
+        before = stored.read_bytes()
+        status = stored.stat()
+        report = self.json_cli("index", "rebuild")
+        self.assertEqual(report["mode"], "unchanged")
+        self.assertEqual(report["bytes"], 0)
+        self.assertEqual(
+            (report["added"], report["updated"], report["removed"]), (0, 0, 0)
+        )
+        self.assertEqual(report["documents"], 4)
+        self.assertEqual(stored.read_bytes(), before)
+        self.assertEqual(stored.stat().st_mtime_ns, status.st_mtime_ns)
+
+        # One entry behind the vault, the same command refreshes again. The
+        # capture refreshes the index itself, so the older file is put back.
+        self.capture("Later", "an entry the next rebuild has to add")
+        stored.write_bytes(before)
+        self.assertEqual(self.json_cli("index", "rebuild")["mode"], "incremental")
+        self.assertEqual(self.json_cli("index", "rebuild", "--full")["mode"], "full")
+
+    def test_a_large_change_set_takes_the_full_path(self) -> None:
+        """Past :func:`patch_limit` the refresh goes through ``to_mutable``."""
+
+        self.assertEqual(patch_limit(0), 64)
+        self.assertEqual(patch_limit(3_200), 64)
+        self.assertEqual(patch_limit(50_000), 1_000)
+
+        stored = self.stored()
+        before = stored.read_bytes()
+        aside = stored.with_name("bm25.idx.aside")
+        stored.rename(aside)
+        # Without an index file the captures do not refresh one, so the stored
+        # index ends up 64 and then 65 changes behind the vault.
+        for number in range(patch_limit(4)):
+            self.capture(f"Bulk {number}", f"bulk import number {number}")
+        aside.rename(stored)
+        at_limit, _ = self.refresh_from(before, None)
+        self.assertEqual(at_limit.added, patch_limit(4))
+        self.assertEqual(at_limit.strategy, "patched")
+
+        stored.rename(aside)
+        self.capture("One more", "bulk import one past the limit")
+        aside.rename(stored)
+        past_limit, full = self.refresh_from(before, None)
+        self.assertEqual(past_limit.added, patch_limit(4) + 1)
+        self.assertEqual(past_limit.strategy, "full")
+        # The patch path would still have produced the same file.
+        forced, patched = self.refresh_from(before, True)
+        self.assertEqual(forced.strategy, "patched")
+        self.assertEqual(_split_index(patched), _split_index(full))
+
+    def test_an_index_the_patch_cannot_trust_is_not_spliced(self) -> None:
+        """The header is outside the payload checksum, so it is checked too.
+
+        Counts that ``to_mutable`` recounts from the slots send the refresh
+        there; section tables that no longer line up with the header cannot
+        be read by either path, so the index is rebuilt from the vault.
+        """
+
+        def setting(field: str, value: int) -> Any:
+            def damage(header: dict[str, Any]) -> None:
+                header[field] = value
+
+            return damage
+
+        def moving(source: str, target: str, size: int) -> Any:
+            def damage(header: dict[str, Any]) -> None:
+                sizes = {item["name"]: item for item in header["sections"]}
+                sizes[source]["bytes"] -= size
+                sizes[target]["bytes"] += size
+
+            return damage
+
+        layout = self.layout()
+        stored = self.stored()
+        for name, damage, strategy in (
+            ("live documents", setting("live_documents", 99), "full"),
+            ("total length", setting("total_length", 1), "full"),
+            ("slot count", setting("document_slots", 99), "rebuilt"),
+            ("vocabulary size", setting("vocabulary_size", 3), "rebuilt"),
+            ("mtimes", moving("document_mtime_ns", "document_size", 8), "rebuilt"),
+            ("offsets", moving("strings", "string_offsets", 8), "rebuilt"),
+            ("strings", moving("strings", "vocabulary", 8), "rebuilt"),
+            ("postings", moving("postings_documents", "forward_terms", 4), "rebuilt"),
+        ):
+            with self.subTest(damage=name):
+                clean = stored.read_bytes()
+                header, _, payload = clean.partition(b"\n")
+                decoded = json.loads(header)
+                damage(decoded)
+                self.capture(f"After {name}", f"entry written after {name}")
+                stored.write_bytes(
+                    json.dumps(decoded, ensure_ascii=False, sort_keys=True).encode()
+                    + b"\n"
+                    + payload
+                )
+                report = refresh(layout.data_root, layout, self.registry())
+                self.assertEqual(report.strategy, strategy)
+                self.assertEqual(report.rebuilt, strategy == "rebuilt")
+                self.assertIs(self.index_state("--verify")["verified"], True)
 
 
 class ConcurrentIndexTest(unittest.TestCase):
