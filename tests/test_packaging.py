@@ -11,7 +11,7 @@ import tomllib
 import unittest
 import venv
 
-from tests import CLI_COMMAND, temporary_root
+from tests import temporary_root
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
@@ -287,30 +287,18 @@ class PackagingMetadataTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("verify_import_namespace", acceptance)
 
-    def test_compatibility_shims_delegate_to_the_package(self) -> None:
-        shims = {
-            "know.py": "noetrail.cli",
-            "knowledge_mcp.py": "noetrail.mcp",
-            "bookmark_fetch_mcp.py": "noetrail.bookmark_fetcher",
-        }
-        expected = subprocess.run(
-            [*CLI_COMMAND, "--version"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        for name, target in shims.items():
-            shim = REPOSITORY_ROOT / "tools" / name
-            source = shim.read_text(encoding="utf-8")
-            self.assertIn(f"from {target} import main", source)
-            self.assertIn("0.11.0", source)
-        observed = subprocess.run(
-            [sys.executable, str(REPOSITORY_ROOT / "tools" / "know.py"), "--version"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        self.assertEqual(observed, expected)
+    def test_removed_compatibility_shims_stay_removed(self) -> None:
+        # The path shims were removed in 0.11.0; the console aliases replace
+        # them and stay until a major-version decision (ADR 0002).
+        for name in ("know.py", "knowledge_mcp.py", "bookmark_fetch_mcp.py"):
+            self.assertFalse((REPOSITORY_ROOT / "tools" / name).exists(), name)
+        scripts = self.metadata["project"]["scripts"]
+        for alias, target in {
+            "knowledge": "noetrail.cli:main",
+            "knowledge-mcp": "noetrail.mcp:main",
+            "knowledge-bookmark-fetcher": "noetrail.bookmark_fetcher:main",
+        }.items():
+            self.assertEqual(scripts[alias], target)
 
     def test_apache_license_is_present(self) -> None:
         license_text = (REPOSITORY_ROOT / "LICENSE").read_text(encoding="utf-8")

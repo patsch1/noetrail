@@ -37,11 +37,12 @@ protected environment. Future uploads still require a maintainer decision. See
 CodeQL scans public changes through the repository workflow. A successful
 scan is part of source acceptance; it does not approve a package upload.
 
-**Drop the compatibility shims (`0.11.0`).** `tools/know.py`,
-`tools/knowledge_mcp.py`, and `tools/bookmark_fetch_mcp.py` exist only for
-deployments that invoke those paths directly. The `knowledge*` console aliases
-and the `KNOWLEDGE_*` environment variables stay longer; removing them is a
-major-version decision recorded in
+**Compatibility shims dropped (`0.11.0`).** `tools/know.py`,
+`tools/knowledge_mcp.py`, and `tools/bookmark_fetch_mcp.py` are removed as the
+first change of the `0.11.0` line; the `noetrail`, `noetrail-mcp`, and
+`noetrail-bookmark-fetcher` commands replace them. The `knowledge*` console
+aliases, the `KNOWLEDGE_*` environment variables, and the other ADR 0002
+fallbacks remain until a major-version decision recorded in
 [ADR 0002](docs/adr/0002-noetrail-name-and-compatibility.md).
 
 **A cheaper index check.** The refresh after a write now costs in proportion

@@ -106,6 +106,6 @@ Before tagging, complete the separate [publisher setup](releasing.md#one-time-se
   documentation in the approved release commit, then verify the package-index
   pages and installation commands after the uploads complete.
 
-The cheaper update of large search indexes and removal of compatibility shims
-in `0.11.0` remain future work in [Roadmap](../ROADMAP.md). They are not gates
-for this alpha and are not bundled into publication preparation.
+Remaining work, such as a cheaper freshness check for large search indexes,
+is tracked in [Roadmap](../ROADMAP.md). It is not a gate for an alpha and is
+not bundled into publication preparation.

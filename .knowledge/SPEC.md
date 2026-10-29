@@ -477,7 +477,7 @@ successful fetch a prerequisite for saving the URL.
 
 ## Review workflow
 
-`python3 tools/know.py review` builds a deterministic queue from active vault
+`noetrail review` builds a deterministic queue from active vault
 entries. An entry appears for one or more of these reasons:
 
 - lifecycle `status` is `unreviewed`;
@@ -486,8 +486,8 @@ entries. An entry appears for one or more of these reasons:
   previously been acknowledged with `reviewed_at`.
 
 The batch queue contains metadata and reasons, not entry bodies. Use
-`python3 tools/know.py review <id>` to inspect one explicitly selected entry.
-Use `python3 tools/know.py review <id> --complete` only after review decisions
+`noetrail review <id>` to inspect one explicitly selected entry.
+Use `noetrail review <id> --complete` only after review decisions
 have been made. Completion:
 
 - refuses while unresolved relations remain;
@@ -539,7 +539,7 @@ links safely.
   intention.
 
 All updates must be written atomically: either the complete new Markdown file
-replaces the old version or the original remains unchanged. All `know.py`
+replaces the old version or the original remains unchanged. All `noetrail`
 readers and writers coordinate through the advisory lock below
 `vault/.locks/`; writers take it exclusively. The revision is derived state and
 is never stored in frontmatter.
@@ -608,14 +608,14 @@ both the storage path and which attributes are legal.
 
 Every normalized entry contains an integer `schema_version`. The current
 version is declared in `.knowledge/config.yaml` and implemented by the ordered
-migration registry in `tools/knowledge_migrations.py`.
+migration registry in `src/noetrail/migrations.py`.
 
 Before changing many entries:
 
 ```sh
-python3 tools/know.py migrate --dry-run
-python3 tools/know.py migrate --apply
-python3 tools/know.py validate
+noetrail migrate
+noetrail migrate --apply
+noetrail validate
 ```
 
 ### Relation validity
