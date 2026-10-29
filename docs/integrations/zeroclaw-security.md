@@ -53,7 +53,7 @@ Do not replace this with `SKILL.toml` shell tools. In current ZeroClaw those
 tools execute as host subprocesses rather than through the configured Docker
 shell runtime, and their command templates interpolate arguments into a shell
 string. The built-in shell is also too broad here because allowing `python3`
-permits any reachable Python file, not just `know.py`.
+permits any reachable Python file, not just the Noetrail CLI.
 
 ## Invariants
 
@@ -103,10 +103,8 @@ The MCP child uses a fixed service root:
 ```text
 /srv/noetrail/
 ├── .knowledge/                           read-only
-├── tools/
-│   ├── knowledge_mcp.py                  read-only
-│   ├── know.py                           read-only
-│   └── knowledge_migrations.py           read-only
+├── src/                                  read-only
+├── tools/                                read-only
 ├── vault/                                read-write PVC
 └── trash/                                read-write PVC
 ```

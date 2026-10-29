@@ -6,6 +6,18 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- remove the compatibility shims `tools/know.py`, `tools/knowledge_mcp.py`,
+  and `tools/bookmark_fetch_mcp.py`, as announced for `0.11.0`. This is a
+  breaking change for a deployment that still invokes one of those paths:
+  run the `noetrail`, `noetrail-mcp`, or `noetrail-bookmark-fetcher` console
+  command instead, or `python3 -m noetrail.cli`, `python3 -m noetrail.mcp`, or
+  `python3 -m noetrail.bookmark_fetcher` with `src/` on `PYTHONPATH`. The
+  `knowledge`, `knowledge-mcp`, and `knowledge-bookmark-fetcher` aliases, the
+  `KNOWLEDGE_*` environment variables, the `~/.config/knowledge` fallback,
+  the former built-ins path fallback, and the ZeroClaw `knowledge__*` tool
+  names remain (ADR 0002). Stored entries, the core schema, and the CLI and
+  MCP surfaces are unchanged.
+
 ## 0.10.0a7 - 2026-10-29
 
 - cut the index freshness check that runs on every indexed query and write

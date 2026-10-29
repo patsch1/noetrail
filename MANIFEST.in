@@ -27,7 +27,7 @@ include .gitignore
 # The full suite, not just the modules setuptools discovers by name.
 graft tests
 
-# Maintainer scripts and the compatibility shims tests and the Makefile call.
+# Maintainer scripts that tests and the Makefile call.
 graft tools
 
 graft docs

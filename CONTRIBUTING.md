@@ -55,7 +55,6 @@ either a maintainer script or a thin compatibility shim:
 | `tools/generate_sbom.py` | maintainer script: CycloneDX SBOM from the packaging metadata |
 | `tools/render_terminal_svg.py` | maintainer script: record `demo/session.sh` into `docs/assets/` |
 | `tools/measure_search.py` | maintainer script: search and agent-turn latency |
-| `tools/know.py`, `tools/knowledge_mcp.py`, `tools/bookmark_fetch_mcp.py` | compatibility shims for deployments that invoke these paths directly; removal target 0.11.0 |
 
 ## Development
 
