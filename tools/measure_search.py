@@ -217,9 +217,18 @@ def mutation_samples(
     }
 
 
-def timed(function, repeats: int) -> dict[str, float]:
+def timed(function, repeats: int, setup=None) -> dict[str, float]:
+    """Median and maximum of `repeats` calls to `function`, in milliseconds.
+
+    `setup`, when given, runs before every sample and outside the timer. It is
+    for work a sample needs but that is not the operation being measured, such
+    as making the change an index refresh is then timed on.
+    """
+
     samples = []
     for _ in range(repeats):
+        if setup is not None:
+            setup()
         start = time.perf_counter()
         function()
         samples.append(time.perf_counter() - start)
@@ -270,23 +279,33 @@ def index_samples(
             f"harbour lantern measurement {counter['value']}",
         )
 
+    # Listing and sorting the inbox takes hundreds of milliseconds at 50,000
+    # entries, and every command loads the registry with or without an index,
+    # so both happen once here rather than inside the timed refresh.
+    inbox_files = sorted((data / "vault" / "inbox").glob("*.md"))
+    registry = SchemaRegistry.load(layout)
     touched = {"value": 0}
+
+    def change_one() -> None:
+        """Edit the next entry: the change the refresh is then timed on."""
+
+        touched["value"] += 1
+        target = inbox_files[touched["value"]]
+        target.write_text(
+            target.read_text(encoding="utf-8") + "\nharbour lantern addition\n",
+            encoding="utf-8",
+        )
 
     def update_one() -> None:
         """Index maintenance alone, with one entry changed.
 
         Timed against the library rather than through `capture`, because a
         capture also pays for the vault scan it would pay for without any
-        index at all. What this reports is the part the index adds.
+        index at all. What this reports is the part the index adds: the
+        refresh, not the edit that `change_one` makes before each sample.
         """
 
-        touched["value"] += 1
-        target = sorted((data / "vault" / "inbox").glob("*.md"))[touched["value"]]
-        target.write_text(
-            target.read_text(encoding="utf-8") + "\nharbour lantern addition\n",
-            encoding="utf-8",
-        )
-        refresh_index(layout.data_root, layout, SchemaRegistry.load(layout))
+        refresh_index(layout.data_root, layout, registry)
 
     report: dict[str, object] = {
         "index_build_full": timed(rebuild_full, max(2, repeats // 2)),
@@ -295,7 +314,9 @@ def index_samples(
         "freshness_check": timed(
             lambda: scan_signatures(layout.data_root), repeats
         ),
-        "index_update_one_entry": timed(update_one, repeats),
+        "index_update_one_entry": timed(
+            update_one, repeats, setup=change_one
+        ),
         "capture_with_index": timed(incremental, repeats),
     }
     for query in queries:
