@@ -1,4 +1,4 @@
-"""Typos produce labelled hints, never fuzzy body evidence or saved aliases."""
+"""Title/alias typos produce labelled hints, never saved aliases."""
 
 import json
 from pathlib import Path
@@ -101,8 +101,11 @@ class TypoSearchTest(VaultHarness, unittest.TestCase):
 
     def test_alias_provenance_filters_and_literal_precedence(self):
         wanted = self.capture("Station", "Synthetic record.", alias="Northern")
-        self.capture("Body only", "A distant southern example.")
-        self.assertEqual(self.search("southetn")["total"], 0)
+        body = self.capture("Body only", "A distant southern example.")
+        # Since ADR 0010 a body spelling is a last-resort candidate of its own.
+        from_body = self.search("southetn")["items"]
+        self.assertEqual([r["id"] for r in from_body], [body])
+        self.assertEqual(from_body[0]["matched_terms"], ["southern"])
         hinted = self.search("--explain", "Northerm")["items"][0]
         self.assertEqual(hinted["id"], wanted)
         self.assertEqual(hinted["match_evidence"][0]["field"], "aliases")

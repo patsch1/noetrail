@@ -32,8 +32,10 @@ from noetrail.frontmatter import (
 from noetrail.index import open_for_search
 from noetrail.provenance import search_provenance
 from noetrail.relations import load_relation_definitions, load_relation_types
-from noetrail.schema import SchemaPackError, TypeDefinition
+from noetrail.schema import SchemaPackError, SchemaRegistry, TypeDefinition
 from noetrail.search import (
+    BODY_TYPO_SCORE,
+    COMPONENT_SCORE,
     LITERAL_SCORE,
     RANK_HYBRID,
     RANK_SUBSTRING,
@@ -41,6 +43,8 @@ from noetrail.search import (
     WORD_FORM_SCORE,
     MemoryTermSource,
     SearchableText,
+    body_typo_terms,
+    component_terms,
     score_query,
     searchable_text,
     term_frequencies,
@@ -317,7 +321,8 @@ def _text_matches(
     come from, and :func:`noetrail.search.score_query` is written so that they
     produce identical floating-point scores rather than merely similar ones.
     Hybrid first unions both lexical predicates. Only an empty filtered
-    union may use the separately labelled word-form scan.
+    union may use the separately labelled fallback stages, and each stage
+    runs only when every earlier one found nothing (ADR 0008-0010).
     """
 
     if args.rank == RANK_SUBSTRING:
@@ -337,22 +342,51 @@ def _text_matches(
         )
         if merged:
             return merged, unreadable
-        for path, metadata, body in args.index.entries:
-            check_deadline()
-            if not keep(metadata):
-                continue
-            text = searchable_text(metadata, body, args.registry)
-            if word_form_terms(query, text.haystack):
-                merged.append((path, metadata, body, text, WORD_FORM_SCORE))
-        if not merged:
+        for score in FALLBACK_STAGES:
             for path, metadata, body in args.index.entries:
                 check_deadline()
-                if keep(metadata) and typo_terms(query, metadata):
+                if not keep(metadata):
+                    continue
+                if _fallback_terms(score, query, metadata, body, args.registry):
                     merged.append((path, metadata, body,
                                    searchable_text(metadata, body, args.registry),
-                                   TYPO_SCORE))
+                                   score))
+            if merged:
+                break
         return merged, unreadable
     return ranked
+
+
+# The order the stages are tried in. The two ADR 0010 stages come last so
+# that nothing the earlier stages return can change; within one query the
+# stages are exclusive, so their scores matter only when variants are fused.
+FALLBACK_STAGES = (WORD_FORM_SCORE, TYPO_SCORE, COMPONENT_SCORE, BODY_TYPO_SCORE)
+# Fallback kinds whose candidates report the observed spellings behind them.
+OBSERVED_TERM_SCORES = (COMPONENT_SCORE, TYPO_SCORE, BODY_TYPO_SCORE)
+
+
+def _fallback_terms(
+    score: float,
+    query: str,
+    metadata: dict[str, object],
+    body: str,
+    registry: SchemaRegistry,
+) -> tuple[str, ...]:
+    """The observed tokens that made an entry a candidate of one stage.
+
+    The two typo stages never assemble the searchable text: the title stage
+    reads only names and the body stage only the body.
+    """
+    if score == TYPO_SCORE:
+        return typo_terms(query, metadata)
+    if score == BODY_TYPO_SCORE:
+        return body_typo_terms(query, body)
+    if score not in (WORD_FORM_SCORE, COMPONENT_SCORE):
+        return ()
+    haystack = searchable_text(metadata, body, registry).haystack
+    if score == WORD_FORM_SCORE:
+        return word_form_terms(query, haystack)
+    return component_terms(query, haystack)
 
 
 def _queries(args: argparse.Namespace) -> list[str]:
@@ -376,8 +410,16 @@ def _queries(args: argparse.Namespace) -> list[str]:
 
 
 def _match_kind(score: float) -> str:
-    return ("typo" if score == TYPO_SCORE else
-            "word_form" if score == WORD_FORM_SCORE else "lexical")
+    return ("typo" if score in (TYPO_SCORE, BODY_TYPO_SCORE) else
+            "word_form" if score in (WORD_FORM_SCORE, COMPONENT_SCORE) else
+            "lexical")
+
+
+def _fusion_tier(score: float) -> int:
+    """Lexical, word form, component, title typo, body typo -- in that order."""
+    if score >= 0:
+        return 4
+    return {WORD_FORM_SCORE: 3, COMPONENT_SCORE: 2, TYPO_SCORE: 1}.get(score, 0)
 
 
 def _multi_text_matches(
@@ -401,7 +443,7 @@ def _multi_text_matches(
         matches.sort(key=lambda item: (-item[4], str(item[1].get("id", ""))))
         for position, match in enumerate(matches, 1):
             check_deadline()
-            path, metadata, _body, _text, score = match
+            path, metadata, body, _text, score = match
             entry_id = str(metadata.get("id", ""))
             if entry_id in identities and identities[entry_id] != path:
                 raise InvalidRequest(
@@ -413,13 +455,14 @@ def _multi_text_matches(
             evidence: dict[str, object] = {
                 "query": query, "match_kind": _match_kind(score)
             }
-            if score == TYPO_SCORE:
-                evidence["matched_terms"] = list(typo_terms(query, metadata))
+            if score in OBSERVED_TERM_SCORES:
+                evidence["matched_terms"] = list(
+                    _fallback_terms(score, query, metadata, body, args.registry)
+                )
             support.setdefault(path, []).append(evidence)
             scores[path] = scores.get(path, 0.0) + 1.0 / (60 + position)
     relevance = {
-        path: (2 if match[4] >= 0 else 1 if match[4] == WORD_FORM_SCORE else 0,
-               scores[path])
+        path: (_fusion_tier(match[4]), scores[path])
         for path, match in merged.items()
     }
     return list(merged.values()), sorted(unreadable), support, relevance
@@ -683,14 +726,15 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
             for key, value in result.items()
             if value is not None
         }
-        if score == WORD_FORM_SCORE:
-            result["match_kind"] = "word_form"
-        elif score == TYPO_SCORE:
-            result["match_kind"] = "typo"
-            result["matched_terms"] = list(typo_terms(args.query, metadata))
+        if score < LITERAL_SCORE:
+            result["match_kind"] = _match_kind(score)
+        if score in OBSERVED_TERM_SCORES:
+            result["matched_terms"] = list(
+                _fallback_terms(score, args.query, metadata, body, args.registry)
+            )
         if path in query_matches:
             result["query_matches"] = query_matches[path]
-            if score == TYPO_SCORE:
+            if score in OBSERVED_TERM_SCORES:
                 supported: set[str] = set()
                 for evidence in query_matches[path]:
                     observed = evidence.get("matched_terms")
@@ -788,7 +832,7 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
     # second time to print a page of at most 50. Measured at 10k: 767 ms with
     # the hash in the loop, against 522 ms for the scan alone.
     items: list[dict[str, object]] = []
-    for _, (path, metadata, body, result, _) in ranked[
+    for _, (path, metadata, body, result, score) in ranked[
         args.offset : args.offset + args.limit
     ]:
         # Which of the flat values above came off the network, in an object of
@@ -800,13 +844,8 @@ def search_page(args: argparse.Namespace, root: Path) -> dict[str, object]:
         if provenance is not None:
             result["provenance"] = provenance
         if getattr(args, "explain", False):
-            fallback_terms = (
-                word_form_terms(
-                    args.query, searchable_text(metadata, body, args.registry).haystack
-                )
-                if result.get("match_kind") == "word_form" else
-                typo_terms(args.query, metadata)
-                if result.get("match_kind") == "typo" else ()
+            fallback_terms = _fallback_terms(
+                score, args.query, metadata, body, args.registry
             )
             result["match_evidence"] = match_evidence(
                 metadata, body, args.registry, args.query, args.rank,

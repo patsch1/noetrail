@@ -87,6 +87,71 @@ Translations remain caller-supplied; vector candidate membership is unchanged.
 No new end-to-end model latency improvement is claimed from these engine and
 protocol tests. See [ADR 0009](adr/0009-typo-and-query-variants.md).
 
+## 2026-10-29: compound parts and body typos
+
+Two further stages run only after every earlier stage is empty
+([ADR 0010](adr/0010-body-typos-and-compound-components.md)): a query token of
+six or more letters that opens or closes a searchable token at least three
+letters longer (`match_kind: word_form`), then one-edit typos of body words of
+seven or more letters (`match_kind: typo`). Compared with `3d3361d`, on the
+100-question set:
+
+| Hybrid | Recall@5 | Precision | MRR@5 | Correct empty | Irrelevant results |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| With title/alias typos | 0.600 | 0.789 | 0.593 | 24/25 | 12 |
+| With compound parts and body typos | 0.653 | 0.803 | 0.647 | 24/25 | 12 |
+
+| Hybrid category (answerable) | Before | After |
+| --- | ---: | ---: |
+| literal (18) | 18 | 18 |
+| temporal (3) | 3 | 3 |
+| typo (18) | 16 | 18 |
+| paraphrase_de (18) | 4 | 6 |
+| cross_language (18) | 4 | 4 |
+
+The four recovered questions are `Mondarchvi` and `Morgenstren` (spelled
+correctly only in the body), `Zugreise schlafen` ("Nachtzugreise") and
+`ruhiger Ort zum Kaffeetrinken` (body "ruhigen"). Substring and BM25 are
+unchanged in every number on every set, as are hybrid's results on the
+word-form transfer set (8/12 found, 8/8 empty, none irrelevant) and the
+20-query regression set (hybrid Recall@5 and MRR 1.000, BM25 0.900,
+substring 0.300).
+
+**Changed label in the typo transfer set.** That set labelled its body case
+`Dampfventli` (body "Dampfventil kontrollieren.") as an absent distractor,
+because it was written to assert ADR 0009's title/alias-only rule. ADR 0010
+makes that note the correct, labelled, last-resort candidate, so the query
+is now answerable with that note as its answer. The label changed because the
+policy changed, not to improve a number. With the new label, hybrid finds
+14/15 before and 15/15 after. All 5 absent queries stay empty both times,
+with no irrelevant result: two two-edit misspellings, one short word, and the
+numeric and hash-like aliases. The set therefore no longer counts as transfer evidence for body
+typos. The evidence is the 100-set recoveries above.
+
+Each guard was compared against a looser setting on all three question sets:
+
+| Guard | Looser setting | What the looser setting added |
+| --- | --- | --- |
+| body typo: 7 letters | 5 letters | two irrelevant results: `kalte` → "Karte", `nicht` → "Nacht" |
+| body typo: 7 letters | 6 letters | no difference; 7 kept as the conservative choice |
+| component: 6 letters | 5 letters | one irrelevant result: `Jacke` → "Regenjacke" for the zipper question |
+| component: at the start or end | anywhere inside | no difference; anchoring kept |
+| component: 3 extra letters | 2 extra letters | no difference |
+
+An earlier draft also accepted only body words capitalised inside a sentence.
+That guard was dropped: in German it means any noun not at a sentence start,
+and it had been chosen while the `Dampfventli` label was in view. Dropping it
+gains `ruhiger` and adds no irrelevant result on these sets.
+
+Of the 26 answerable questions hybrid still misses, 12 are German paraphrases
+and 14 are language changes with no lexical overlap, such as `bike chain care`
+for "Fahrradwartung". `Pflanzen auf dem Balkon wässern` keeps its four
+irrelevant results, because `auf` and `dem` match other entries and the
+fallbacks never run after a nonempty union. These remain agent work through
+`query_variants`; Noetrail adds no synonym list, translation or embeddings.
+All three sets are locally authored by the same contributor and remain
+diagnostics, not independent benchmarks.
+
 ## Fresh client check
 
 On 2026-10-07 a ZeroClaw 0.8.4 client using `gpt-5.6-terra` with medium

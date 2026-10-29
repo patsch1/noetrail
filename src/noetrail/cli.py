@@ -689,7 +689,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=RANK_HYBRID,
         help=(
             "hybrid (default) returns both and ranks by BM25, with labelled "
-            "word-form or title/alias typo candidates only when both are empty; "
+            "word-form, typo and compound-part candidates only when both are "
+            "empty; "
             "substring "
             "matches the query literally against the searched text; bm25 "
             "tokenizes it and ranks entries containing any term"

@@ -119,10 +119,14 @@ class HybridRankTest(VaultHarness, unittest.TestCase):
 
         self.seed()
         self.word_forms()
+        self.capture("Synthetic project", "Notes on the Morgenstern prototype.")
         cases: list[tuple[str, tuple[str, ...]]] = [
             ("grind", ()),
             ("bitter", ()),
             ("method for pouring", ()),
+            # The two last empty-result stages (ADR 0010), with evidence.
+            ("extract nothing", ("--explain",)),
+            ("Morgenstren", ("--explain",)),
             ("grind", ("--sort", "title_asc")),
             ("grind", ("--limit", "1")),
             ("grind", ("--limit", "1", "--offset", "1")),
@@ -141,6 +145,11 @@ class HybridRankTest(VaultHarness, unittest.TestCase):
             cases, with_index, without_index, strict=True
         ):
             self.assertEqual(indexed, scanned, case)
+        self.assertEqual(
+            [with_index[3]["items"][0]["matched_terms"],
+             with_index[4]["items"][0]["matched_terms"]],
+            [["extraction"], ["morgenstern"]],
+        )
 
     def test_an_empty_query_still_lists_everything_once(self) -> None:
         entries = self.word_forms()

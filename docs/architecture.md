@@ -126,7 +126,10 @@ single predicate. All three share one definition of what text is searched, so
 a field declared `searchable: true` behaves identically under any of them. See
 [ADR 0007](adr/0007-hybrid-retrieval-default.md). If the filtered union is empty,
 hybrid may return separately labelled word-form candidates under the bounded
-rules in [ADR 0008](adr/0008-word-form-fallback.md). This fallback uses the same
+rules in [ADR 0008](adr/0008-word-form-fallback.md), then title/alias typos
+([ADR 0009](adr/0009-typo-and-query-variants.md)), then compound parts and
+typos of body words ([ADR 0010](adr/0010-body-typos-and-compound-components.md)),
+each stage only if every earlier one is empty. These fallbacks use the same
 searchable fields without changing the token vocabulary or stored cache.
 
 `noetrail index rebuild` creates an opt-in inverted index below the instance

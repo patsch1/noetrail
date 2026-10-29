@@ -102,15 +102,15 @@ a release change.
 
 ## Ranking modes
 
-`search` has two lexical predicates and a hybrid mode with an empty-result
-word-form and title/alias typo fallback. They share one
+`search` has two lexical predicates and a hybrid mode with empty-result
+word-form, typo and compound-part fallbacks. They share one
 definition of which fields are searched, so a field declared `searchable: true`
 behaves identically under any of them, and every structured filter, the page
 contract, and the sort options are the same.
 
 | | `--rank substring` | `--rank bm25` | `--rank hybrid` (default) |
 | --- | --- | --- | --- |
-| matches | the query as a literal substring of the searched text | entries containing at least one query token | either; bounded word forms, then title/alias typos, only if earlier stages are empty |
+| matches | the query as a literal substring of the searched text | entries containing at least one query token | either; bounded word forms, then title/alias typos, compound parts and body typos, each only if every earlier stage is empty |
 | finds `extractio` in "extraction" | yes | no | yes |
 | finds `ramen berlin` across a title and a tag | no | yes | yes |
 | default order | newest update, or newest occurrence | BM25 relevance | BM25 relevance |
@@ -140,15 +140,34 @@ The fallback costs another tokenizing scan, even with a fresh index. It does
 not change the BM25 vocabulary or add synonyms.
 See [ADR 0008](adr/0008-word-form-fallback.md) for the tradeoff.
 
-If the word-form stage is also empty, hybrid checks **title and alias tokens
-only** for one insertion, deletion, substitution or adjacent transposition.
+If the word-form stage is also empty, hybrid checks **title and alias tokens**
+for one insertion, deletion, substitution or adjacent transposition.
 Both tokens must contain 5–64 letters; numeric and hash-like tokens are excluded.
-It does not fuzzy-match bodies, tags or custom fields. Results carry
-`match_kind: typo` and up to two observed `matched_terms`; opt-in explanations
-show the actual spelling and its provenance, not an invented correction.
-They are tentative candidates, not proof that two names identify the same thing.
-This is another scan after an empty result. Nonempty lexical/word-form results
-and explicit `substring`/`bm25` modes stay unchanged.
+Results carry `match_kind: typo` and up to two observed `matched_terms`;
+opt-in explanations show the actual spelling and its provenance, not an
+invented correction. They are tentative candidates, not proof that two names
+identify the same thing. This is another scan after an empty result.
+Nonempty lexical/word-form results and explicit `substring`/`bm25` modes stay
+unchanged.
+
+Two further stages follow, each only if everything before it is empty
+([ADR 0010](adr/0010-body-typos-and-compound-components.md)):
+
+- **Compound parts.** A query token of at least six letters that opens or
+  closes a searchable token at least three letters longer in the same entry:
+  `Zugreise schlafen` finds "Nachtzugreise". A part inside a word does not
+  count, so `eichen` never finds "Zeichenblock". A one-word query already
+  finds such a compound as a literal substring; this stage gives each token
+  of a multi-word query the same chance, more strictly. Candidates carry
+  `match_kind: word_form` and the supporting compound in `matched_terms`.
+- **Body typos.** The one-edit rule above, applied to body words; both tokens
+  need at least seven letters, numeric and hash-like tokens are excluded, and
+  at most two observed spellings are reported. Tags and custom fields are
+  never fuzzy matched. Candidates carry `match_kind: typo` and the observed
+  body spelling in `matched_terms`.
+
+Both stages are tentative in the same way, cost one more scan each only when
+everything before them is empty, and never store a correction.
 
 ### Several query variants in one retrieval
 
