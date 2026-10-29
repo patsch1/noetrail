@@ -493,11 +493,19 @@ def command_index_rebuild(args: argparse.Namespace, root: Path) -> int:
     if args.full:
         drop_index(args.layout)
     rebuilt = refresh_index(root, args.layout, args.registry, force=args.full)
+    if args.full:
+        mode = "full"
+    elif rebuilt.strategy == "unchanged":
+        # The index already matched the vault and was left as it is, which is
+        # why `bytes` is 0: nothing to do, not a failed write.
+        mode = "unchanged"
+    else:
+        mode = rebuilt.reason
     print(
         json.dumps(
             {
                 "path": str(index_path(args.layout)),
-                "mode": "full" if args.full else rebuilt.reason,
+                "mode": mode,
                 "documents": rebuilt.document_count,
                 "vocabulary_size": rebuilt.vocabulary_size,
                 "added": rebuilt.added,

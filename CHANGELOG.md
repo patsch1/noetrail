@@ -8,7 +8,15 @@ All notable user-visible changes will be documented here. The project follows
 
 - cut the index freshness check that runs on every indexed query and write
   by roughly 40% (374 ms to 217 ms at 50,000 entries on an M1 Pro); the
-  signature digest is unchanged, so existing indexes stay fresh.
+  signature digest is unchanged, so existing indexes stay fresh;
+- make the index refresh after a write cost in proportion to the change
+  rather than the vault: a small change set is spliced into the stored index
+  instead of decoding every document and encoding it again (one capture at
+  50,000 entries on an M1 Pro: 782 ms to 340 ms, two thirds of it now the
+  stat walk). An index that already matches the vault is left untouched, and
+  `noetrail index rebuild` without `--full` then reports `"mode": "unchanged"`
+  with `"bytes": 0` because there is nothing to do. The file format is
+  unchanged and an existing index stays fresh.
 
 ## 0.10.0a6 - 2026-10-09
 
