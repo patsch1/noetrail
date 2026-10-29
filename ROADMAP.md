@@ -7,13 +7,15 @@ and shipped is in [the decision log](docs/internal/decision-log.md).
 
 ## Where it stands
 
-`0.10.0a4` is the current public alpha, available as a GitHub prerelease and on
-PyPI and TestPyPI. It adds safe bookmark metadata refresh and attachment
-discovery, with channel-specific Discord delivery guidance; the first public
-alpha was `0.10.0a1`. The vault format is at core schema 12, the CLI and the
-Noetrail MCP server share one validated code path,
-custom types are declarative schema packs, and the runtime has no third-party
-dependencies. Migrations are deterministic and previewable, and every release
+`0.10.0a6` is the current public alpha, available as a GitHub prerelease and on
+PyPI and TestPyPI. It keeps a bare image path out of `get_attachment` replies
+once an outbox delivery marker is configured; `0.10.0a4` added safe bookmark
+metadata refresh and attachment discovery, `0.10.0a5` channel-specific Discord
+delivery guidance, and the first public alpha was `0.10.0a1`. The vault
+format is at core schema 12, the CLI and the Noetrail MCP server share one
+validated code path, custom types are declarative schema packs, and the
+runtime has no third-party dependencies. Migrations are deterministic and
+previewable, and every release
 is checked by building it, running the suite from the unpacked source
 distribution, and exercising an installed wheel.
 
@@ -40,10 +42,14 @@ and the `KNOWLEDGE_*` environment variables stay longer; removing them is a
 major-version decision recorded in
 [ADR 0002](docs/adr/0002-noetrail-name-and-compatibility.md).
 
-**A cheaper index update.** Once an index exists, every write rewrites the
-whole file: measured at about 2.4 s on a 50,000-entry vault. That is why the
-index is opt-in rather than automatic, and it is the next thing worth fixing
-for anyone running at that size.
+**A cheaper index check.** The refresh after a write now costs in proportion
+to the change rather than the vault: a small change set is spliced into the
+stored index instead of decoding and re-encoding all of it, and keeping a
+50,000-entry index current after a one-entry edit measures about 0.3 s. What
+still grows with the vault is the freshness check, a stat of every file on
+every indexed query and every refresh, which is most of that 0.3 s.
+Removing it needs a different freshness strategy, not a faster walk, and that
+is the next thing worth solving for anyone running at that size.
 
 **Everyday retrieval and a small alpha pilot.** The 100-question diagnostic
 set now exposes lexical gaps, including German paraphrases, typos and language

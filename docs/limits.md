@@ -207,10 +207,11 @@ python3 tools/measure_search.py --entries N --repeats 3 \
   --vocabulary 20000 --body-words 60 --skip-agent-turns
 ```
 
-Measured on a two-core Linux container with local disk and CPython 3.11,
-median of three runs. These are **not** the same machine as the tables above,
-which were taken on an Apple M-series laptop; compare the columns within a
-table, not across the two sets.
+Measured on an Apple M1 Pro running macOS 27.0.1, with the vault on the
+internal SSD's APFS volume and CPython 3.15.0, median of three runs. These are
+**not** the conditions of the tables above, which were taken on an Apple
+M-series laptop with CPython 3.13 and a different corpus; compare the columns
+within a table, not across the two sets.
 
 The synthetic corpus here is deliberately richer than the one those earlier
 tables use: sixty-word bodies drawn from a twenty-thousand word vocabulary.
@@ -218,39 +219,41 @@ The default fifteen-word vocabulary keeps the older numbers reproducible but
 says nothing useful about an index, because every query matches nearly the
 whole vault.
 
-Query latency, in-process, for one page of results:
+Query latency, in-process, for one page of results of the two-word query
+`obsidian lantern`:
 
 | Entries | `--rank substring` | `--rank bm25`, fresh index | `--rank bm25`, no index |
 | ---: | ---: | ---: | ---: |
-| 1,000 | 62 ms | 21 ms | 123 ms |
-| 10,000 | 608 ms | 140 ms | 1,248 ms |
-| 50,000 | 3,279 ms | 718 ms | 7,542 ms |
+| 1,000 | 60 ms | 12 ms | 94 ms |
+| 10,000 | 704 ms | 54 ms | 993 ms |
+| 50,000 | 3,475 ms | 359 ms | 6,817 ms |
 
-Two things to read from that. With a fresh index, ranking is 2.9x to 4.6x
+Two things to read from that. With a fresh index, ranking is 5x to 13x
 faster than the substring scan it replaces, because only the entries that
-scored are read. Without one, `--rank bm25` is about 2x *slower* than
+scored are read. Without one, `--rank bm25` is 1.4x to 2x *slower* than
 substring, because it tokenizes the whole vault for every query — which is the
 price of the guarantee that deleting the index never changes an answer.
 
-For a nonempty lexical result, `--rank hybrid` runs both routes and costs their sum: with a fresh index,
-roughly the substring column plus the indexed one; without an index, roughly
-the substring column plus the unindexed one. That is the price of the recall
-below, and it is the argument for building the index on a vault large enough
-for the numbers above to matter. A vault of a few thousand entries pays
-milliseconds; `--rank substring` remains available for anyone who would rather
-have the cheapest possible scan than the answer.
+For a nonempty lexical result, `--rank hybrid` runs both routes. With a fresh
+index it costs roughly their sum, the substring column plus the indexed one;
+without an index, little more than the unindexed column, because both routes
+read the same parsed vault and the literal pass over it is cheap. That is the
+price of the recall below, and it is the argument for building the index on a
+vault large enough for the numbers above to matter. A vault of a few thousand
+entries pays milliseconds; `--rank substring` remains available for anyone
+who would rather have the cheapest possible scan than the answer.
 
 What the index costs:
 
 | Entries | full build | on disk | per entry | freshness check | incremental update, one entry |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1,000 | 0.22 s | 1.4 MB | 1,359 B | 9 ms | 95 ms |
-| 10,000 | 2.3 s | 9.4 MB | 943 B | 97 ms | 485 ms |
-| 50,000 | 11.7 s | 45.2 MB | 904 B | 505 ms | 2.4 s |
+| 1,000 | 0.13 s | 1.4 MB | 1,359 B | 4 ms | 9 ms |
+| 10,000 | 2.2 s | 9.4 MB | 943 B | 38 ms | 67 ms |
+| 50,000 | 7.4 s | 45.2 MB | 904 B | 201 ms | 320 ms |
 
 The freshness check is one stat per file and runs on every indexed query, so it
-is the floor under the latency above: at 50,000 entries it is 505 ms of the
-718 ms.
+is the floor under the latency above: at 50,000 entries it is 201 ms of the
+359 ms.
 
 The incremental update re-reads only the entries whose signature moved. For a
 small change set it builds the new index from the stored one by copying the
@@ -260,18 +263,28 @@ changed entries, and reading, hashing and writing the file once. When more than
 64 entries and more than 2 % of the vault changed together, it decodes the
 stored index and encodes it again instead, which yields the same bytes. Either
 way the file is replaced whole and atomically, and an index that already
-matches the vault is not rewritten at all. The update is charged to every
+matches the vault is not rewritten at all. The column above times that
+refresh alone, after a one-entry edit: at 50,000 entries the stat walk is
+201 ms of its 320 ms, and the rest is parsing the changed entry and reading,
+splicing, hashing and writing the 45 MB file. The update is charged to every
 write once an index exists:
 
 | Entries | `capture` without an index | `capture` with an index |
 | ---: | ---: | ---: |
-| 1,000 | 61 ms | 145 ms |
-| 10,000 | 561 ms | 1,070 ms |
-| 50,000 | 3.3 s | 6.4 s |
+| 1,000 | 57 ms | 70 ms |
+| 10,000 | 659 ms | 673 ms |
+| 50,000 | 4.4 s | 3.8 s |
 
-At 50,000 entries the index roughly doubles the cost of a capture. That is the
-honest reason it is opt-in rather than automatic, and the reason a
-write-heavy vault of that size should measure before switching it on.
+A capture scans the whole vault for its own checks whether or not an index
+exists, and that scan, not the index, is most of its cost. From 10,000 entries
+up, the difference between the two columns is smaller than a capture varies
+from run to run: the 50,000-entry capture without an index came out *slower*
+here, and a second run measured 4.2 s without and 4.9 s with. Read the
+index's share of a write from the incremental-update column instead: about
+320 ms, under a tenth of a capture at 50,000 entries. It no longer doubles
+the cost of a write, as it did while every refresh decoded and re-encoded the
+whole index. What still grows with the vault rather than with the change is
+the stat walk that every refresh and every indexed query performs.
 
 ## Measured retrieval quality
 
@@ -401,7 +414,10 @@ the earlier table; compare within this table, not between different machines.
 The extra literal pass is a small fraction of unindexed hybrid cost in this
 sample. Keep the existing optional index and prioritize retrieval quality;
 this 1,000-entry run does not justify a new storage engine or extrapolation to
-50,000 entries. Whole-index rewrites remain a measured scaling limitation.
+50,000 entries. The one-entry maintenance figure above predates splicing a
+small change into the stored index; the scaling limitation that remains is
+the stat of every file that each indexed query and each refresh performs (see
+[Measured BM25 and index cost](#measured-bm25-and-index-cost)).
 
 Nonempty queries with no tokens (emoji, punctuation or tokens over 64 characters)
 never mean "list everything": hybrid applies the literal query, BM25 returns
