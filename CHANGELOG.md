@@ -6,6 +6,8 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.10.0a7 - 2026-10-29
+
 - cut the index freshness check that runs on every indexed query and write
   by roughly 40% (374 ms to 217 ms at 50,000 entries on an M1 Pro); the
   signature digest is unchanged, so existing indexes stay fresh;

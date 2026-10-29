@@ -9,10 +9,11 @@ The first public alpha is `0.10.0a1`, available from
 preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
-The current alpha is `0.10.0a6`, with marker-only outbox replies that omit the
-redundant bare image path, plus confirmed Discord inbound staging. Bookmark
-refresh and attachment discovery remain available. The core schema remains 12. See its
-[release notes](releases/0.10.0a6.md).
+The current alpha is `0.10.0a7`, with a faster index freshness check, a
+derived-index refresh that costs in proportion to the change, and two labelled
+empty-result fallback stages in hybrid search. The marker-only outbox replies
+from a6 remain. The core schema remains 12 and the index format is unchanged.
+See its [release notes](releases/0.10.0a7.md).
 
 The intended channels are:
 
@@ -140,12 +141,12 @@ release channel or current alpha changes:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**Published `0.10.0a6` on production PyPI**
+**Published `0.10.0a7` on production PyPI**
 
 | Page | Updated package-publication statement |
 | --- | --- |
 | `README.md` | "available on PyPI, GitHub and TestPyPI" |
-| `docs/quickstart.md` | "`0.10.0a6` is on PyPI" |
+| `docs/quickstart.md` | "`0.10.0a7` is on PyPI" |
 | `docs/installation.md` | "The alpha is on PyPI" |
 | `docs/integrations/mcp-clients.md` | "The alpha is on PyPI" |
 
@@ -188,7 +189,7 @@ and [redacting comment revisions](https://docs.github.com/en/communities/moderat
    failure must be resolved with an explicitly approved rewrite or a new clean
    public repository before visibility changes.
 6. Review compatibility and rollback notes.
-7. Create annotated tag `v0.10.0a6` only after publication approval.
+7. Create annotated tag `v0.10.0a7` only after publication approval.
 
 ## Artifact workflow
 
@@ -218,12 +219,12 @@ After reviewing the artifact, create the prerelease from the downloaded files
 without rebuilding them:
 
 ```sh
-gh release create v0.10.0a6 \
+gh release create v0.10.0a7 \
   --prerelease \
-  --title "Noetrail 0.10.0a6" \
-  --notes-file docs/releases/0.10.0a6.md \
-  dist/noetrail-0.10.0a6-py3-none-any.whl \
-  dist/noetrail-0.10.0a6.tar.gz \
+  --title "Noetrail 0.10.0a7" \
+  --notes-file docs/releases/0.10.0a7.md \
+  dist/noetrail-0.10.0a7-py3-none-any.whl \
+  dist/noetrail-0.10.0a7.tar.gz \
   dist/noetrail-sbom.cdx.json \
   dist/SHA256SUMS.txt
 ```
@@ -236,7 +237,7 @@ Download the distributions, SBOM and checksum manifest into the same directory;
 the manifest uses filenames relative to that directory, without build paths:
 
 ```sh
-gh attestation verify noetrail-0.10.0a6-py3-none-any.whl --repo patsch1/noetrail
+gh attestation verify noetrail-0.10.0a7-py3-none-any.whl --repo patsch1/noetrail
 sha256sum --check SHA256SUMS.txt
 ```
 
