@@ -16,7 +16,17 @@ All notable user-visible changes will be documented here. The project follows
   stat walk). An index that already matches the vault is left untouched, and
   `noetrail index rebuild` without `--full` then reports `"mode": "unchanged"`
   with `"bytes": 0` because there is nothing to do. The file format is
-  unchanged and an existing index stays fresh.
+  unchanged and an existing index stays fresh;
+- add two last empty-result stages to hybrid search, each tried only when
+  every earlier stage found nothing: a query word of six or more letters that
+  opens or closes a longer word in the entry (`Zugreise schlafen` finds
+  "Nachtzugreise"; `match_kind: word_form`), then one-edit typos of body words
+  of seven or more letters (`Mondarchvi` finds a note mentioning
+  "Mondarchiv"; `match_kind: typo`). Both report the observed
+  spelling in `matched_terms` and in explanations. Nonempty results, the
+  `substring` and `bm25` modes, the index and the wire shapes are unchanged;
+  hybrid Recall@5 on the 100-question diagnostic rises from 0.600 to 0.653
+  with no new irrelevant result (ADR 0010).
 
 ## 0.10.0a6 - 2026-10-09
 

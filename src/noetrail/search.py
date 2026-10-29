@@ -56,7 +56,7 @@ RANK_BM25 = "bm25"
 # BM25 answers a multi-word question that a literal scan cannot, and a literal
 # scan answers `hydrat` against "hydration" and `noodle` against "noodles",
 # which a tokenised ranking cannot. Running both costs one more pass and
-# removes the choice. Only an empty filtered union may use word_form_terms.
+# removes the choice. Only an empty filtered union may use the fallbacks.
 RANK_HYBRID = "hybrid"
 SEARCH_RANKS = (RANK_SUBSTRING, RANK_BM25, RANK_HYBRID)
 
@@ -67,11 +67,24 @@ SEARCH_RANKS = (RANK_SUBSTRING, RANK_BM25, RANK_HYBRID)
 LITERAL_SCORE = 0.0
 
 # A separate, explicitly labelled last resort, never mixed into lexical hits.
+# Each stage runs only when every stage above it found nothing, and the scores
+# keep that order wherever candidates from different queries are fused.
 WORD_FORM_SCORE = -1.0
+COMPONENT_SCORE = -1.5
 TYPO_SCORE = -2.0
+BODY_TYPO_SCORE = -3.0
 WORD_ENDINGS = ("e", "en", "es", "n", "s")
 MIN_FORM_LENGTH = 5
 MAX_FORM_QUERY_TERMS = 16
+# A body holds far more words than a title, so its one-edit neighbours need a
+# longer word before an accidental neighbour becomes unlikely (ADR 0010).
+MIN_BODY_TYPO_LENGTH = 7
+# A component must be long enough to be a word of its own, and the compound it
+# sits in at least three letters longer, so that an inflection (`-en`) or a
+# plural is left to the word-form rule instead.
+MIN_COMPONENT_LENGTH = 6
+MIN_COMPONENT_EXTENSION = 3
+HASH_LIKE = re.compile(r"[a-f]{8,}")
 
 
 def one_edit_apart(left: str, right: str) -> bool:
@@ -113,23 +126,84 @@ def typo_terms(query: str, metadata: dict[str, object]) -> tuple[str, ...]:
         return ()
     names = [str(metadata.get("title", "")),
              *(str(alias) for alias in metadata_list(metadata, "aliases"))]
-
-    def eligible(word: str) -> bool:
-        return (
-            word.isalpha() and len(word) >= MIN_FORM_LENGTH
-            and not re.fullmatch(r"[a-f]{8,}", word)
-        )
-
     words = sorted({word for name in names for word in tokenize(name)
-                    if eligible(word)})
+                    if _fuzzy_eligible(word, MIN_FORM_LENGTH)})
+    return _one_edit_terms(terms, words, MIN_FORM_LENGTH)
+
+
+def _fuzzy_eligible(word: str, minimum: int) -> bool:
+    return (
+        word.isalpha() and len(word) >= minimum
+        and not HASH_LIKE.fullmatch(word)
+    )
+
+
+def _one_edit_terms(
+    terms: Sequence[str], words: Sequence[str], minimum: int
+) -> tuple[str, ...]:
     found: list[str] = []
     for term in terms:
         check_deadline()
-        if not eligible(term):
+        if not _fuzzy_eligible(term, minimum):
             continue
         for word in words:
             check_deadline()
             if one_edit_apart(term, word) and word not in found:
+                found.append(word)
+                if len(found) == 2:
+                    return tuple(found)
+    return tuple(found)
+
+
+def body_typo_terms(query: str, body: str) -> tuple[str, ...]:
+    """Observed body tokens, at most two, one edit from a query token.
+
+    Stricter than :func:`typo_terms` because a body vocabulary is large:
+    seven or more letters, alphabetic and not hash-like on both sides. Only
+    consulted after every earlier stage was empty, which already guarantees
+    that no query token occurs in any entry in scope -- so a correctly
+    spelled word that is in the vault never reaches this function. Tags and
+    custom fields are not consulted. Never persist the result.
+    """
+    terms = sorted(set(tokenize(query)))
+    if not terms or len(terms) > MAX_FORM_QUERY_TERMS:
+        return ()
+    words = sorted(
+        {word for word in tokenize(searchable_body(body))
+         if _fuzzy_eligible(word, MIN_BODY_TYPO_LENGTH)}
+    )
+    return _one_edit_terms(terms, words, MIN_BODY_TYPO_LENGTH)
+
+
+def component_terms(query: str, text: str) -> tuple[str, ...]:
+    """Observed compounds, at most two, that begin or end with a query token.
+
+    The reverse of the compound rule in :func:`word_form_terms`: the query
+    names one part (`Zugreise`) and the entry holds the compound
+    (`Nachtzugreise`). The part needs six letters and the compound at least
+    three more; the part must open or close the compound, never sit inside
+    it, so `eichen` does not find "Zeichenblock". Hash-like tokens are
+    excluded on both sides.
+    """
+    terms = sorted(set(tokenize(query)))
+    if not terms or len(terms) > MAX_FORM_QUERY_TERMS:
+        return ()
+    words = sorted(
+        {word for word in tokenize(text)
+         if _fuzzy_eligible(word, MIN_COMPONENT_LENGTH + MIN_COMPONENT_EXTENSION)}
+    )
+    found: list[str] = []
+    for term in terms:
+        check_deadline()
+        if not _fuzzy_eligible(term, MIN_COMPONENT_LENGTH):
+            continue
+        for word in words:
+            check_deadline()
+            if (
+                len(word) >= len(term) + MIN_COMPONENT_EXTENSION
+                and (word.startswith(term) or word.endswith(term))
+                and word not in found
+            ):
                 found.append(word)
                 if len(found) == 2:
                     return tuple(found)
@@ -264,18 +338,11 @@ def searchable_text(
             sort_keys=True,
         ),
     ]
-    # The provenance fence is machinery, not content. Leaving it in made every
-    # fenced bookmark a hit for a query containing "noetrail".
-    searchable_body = body
-    if WEB_CONTENT_BEGIN in searchable_body:
-        searchable_body = searchable_body.replace(WEB_CONTENT_BEGIN, "").replace(
-            WEB_CONTENT_END, ""
-        )
     haystack = "\n".join(
         [
             *(str(value) for value in searchable_metadata),
             " ".join(str(tag) for tag in metadata_list(metadata, "tags")),
-            searchable_body,
+            searchable_body(body),
         ]
     ).casefold()
     return SearchableText(
@@ -283,6 +350,17 @@ def searchable_text(
         attributes=searchable_attributes,
         custom=custom_definition,
     )
+
+
+def searchable_body(body: str) -> str:
+    """The body without the provenance fence.
+
+    The fence is machinery, not content. Leaving it in made every fenced
+    bookmark a hit for a query containing "noetrail".
+    """
+    if WEB_CONTENT_BEGIN in body:
+        return body.replace(WEB_CONTENT_BEGIN, "").replace(WEB_CONTENT_END, "")
+    return body
 
 
 def registry_fingerprint(registry: SchemaRegistry) -> str:

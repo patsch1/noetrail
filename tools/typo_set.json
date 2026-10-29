@@ -1,6 +1,6 @@
 {
   "name": "title-typo-transfer-diagnostics",
-  "about": "Locally authored synthetic transfer cases created after fixing the one-edit rules, without retuning them. NOT an independent benchmark. Bodies and numeric/hash-like aliases are intentional absent distractors.",
+  "about": "Locally authored synthetic transfer cases created after fixing the one-edit rules, without retuning them. NOT an independent benchmark. Since ADR 0010, body words of seven or more letters are reachable as labelled last-resort typo candidates, so the body case Dampfventli is answerable; the numeric/hash-like aliases remain the intentional absent distractors.",
   "entries": [
     {"key": "horn", "title": "Nebelhorn", "text": "Signal vor dem Start prüfen."},
     {"key": "lantern", "title": "Papierlaterne", "text": "Faltung vor dem Aufbau prüfen."},
@@ -28,7 +28,7 @@
     {"query": "Rounemplan", "category": "absent", "relevant": []},
     {"query": "Kite", "category": "absent", "relevant": []},
     {"query": "123457", "category": "absent", "relevant": []},
-    {"query": "Dampfventli", "category": "absent", "relevant": []},
+    {"query": "Dampfventli", "category": "body", "relevant": ["distractor"]},
     {"query": "abcdexab", "category": "absent", "relevant": []}
   ]
 }
