@@ -6,7 +6,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 DISTRIBUTION_NAME = "noetrail"
 LEGACY_DISTRIBUTION_NAME = "personal-knowledge-vault"
-FALLBACK_VERSION = "0.10.0a7"
+FALLBACK_VERSION = "0.11.0a1"
 
 
 def application_version() -> str:

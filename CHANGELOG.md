@@ -6,6 +6,8 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+## 0.11.0a1 - 2026-10-30
+
 - remove the compatibility shims `tools/know.py`, `tools/knowledge_mcp.py`,
   and `tools/bookmark_fetch_mcp.py`, as announced for `0.11.0`. This is a
   breaking change for a deployment that still invokes one of those paths:

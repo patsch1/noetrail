@@ -49,9 +49,10 @@ if they prefer. The project has no bug bounty.
 
 | Version | Supported |
 | --- | --- |
-| `0.10.x` (current alpha line) | yes |
+| `0.11.x` (current alpha line) | yes |
 | `main` | yes |
-| `0.9.x` and older internal lines | no; upgrade to `0.10.x` |
+| `0.10.x` | no; upgrade to `0.11.x` |
+| `0.9.x` and older internal lines | no; upgrade to `0.11.x` |
 
 Before `1.0`, security fixes target the latest released line and the current
 development branch only. There is no backport line: a fix is released as a new
