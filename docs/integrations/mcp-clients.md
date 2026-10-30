@@ -136,9 +136,10 @@ them all.
 | `opencode` | OpenCode | `mcp` with `"type": "local"` and the command as one array in `~/.config/opencode/opencode.json` (or `opencode.json` in the project root, or the file `OPENCODE_CONFIG` names) | `~/.agents/skills`; also `~/.config/opencode/skills`, `~/.claude/skills` |
 | `zeroclaw` | ZeroClaw | `[[mcp.servers]]` in `~/.zeroclaw/config.toml`, in the `env -i` shape of the [deploy example](../../deploy/zeroclaw/security-profiles.example.toml) | `<zeroclaw-install>/shared/skills/knowledge-vault` |
 
-`connect` writes nothing: not the host's file, not the instance. Paste the
-block yourself, then run the printed `noetrail skills export DIRECTORY` line
-if the host loads skills. Without `--client` it lists the supported hosts.
+By default `connect` writes nothing: not the host's file, not the instance.
+Paste the block yourself, or let `--write --apply` merge it for a JSON host
+(see below), then run the printed `noetrail skills export DIRECTORY` line if
+the host loads skills. Without `--client` it lists the supported hosts.
 
 - Root options and `NOETRAIL_DATA_ROOT` select the instance as for every other
   command. Without them, `connect` uses the instance `quickstart` created:
@@ -162,6 +163,61 @@ if the host loads skills. Without `--client` it lists the supported hosts.
 The host formats were taken from each vendor's documentation as of 2026-10-30;
 a host can change them in a later release. For any other host, use the generic
 block below.
+
+### Write the configuration for you
+
+For the hosts that keep their configuration in JSON (`claude-code`,
+`claude-desktop`, `cursor`, `gemini`, `vscode` and `opencode`), `connect` can
+merge the server entry into the file itself. It is a preview until you add
+`--apply`:
+
+```sh
+noetrail connect --client cursor --write          # show what would change
+noetrail connect --client cursor --write --apply  # make exactly that change
+```
+
+The preview names the file, the action (`create`, `update`, `unchanged`, or a
+refusal), the backup it would make, and the entry it would write, and ends by
+telling you to add `--apply`. Nothing is written without `--apply`.
+
+- **Which file.** The host's path for this platform exactly as `connect`
+  prints it, with `~` and `%APPDATA%` expanded. The project files
+  `.mcp.json` (Claude Code) and `.vscode/mcp.json` (VS Code) are taken
+  relative to the current directory, and `.vscode/` is created if needed.
+  `--config-file PATH` writes another file instead, for example a project's
+  `.cursor/mcp.json`, Claude Desktop on Linux, or `OPENCODE_CONFIG`, and
+  creates its missing directories.
+- **What changes.** Only `KEY.noetrail` (`mcpServers`, `servers` for VS Code,
+  `mcp` for OpenCode). Other servers and keys, `$schema` included, are kept.
+  A new OpenCode file gets the `$schema` line the printed block carries. The
+  file is written as two-space JSON with a final newline, or with four spaces
+  or tabs if it already used them; comments cannot survive this, which is
+  why such files are refused.
+- **Backup.** Before an existing file is replaced, it is copied to
+  `FILE.YYYYmmddTHHMMSSZ.bak` (UTC) next to it, readable only by you; an
+  existing backup is never overwritten. The new file is written atomically
+  and keeps the old file's permissions; a new file is readable only by you.
+- **Same entry.** An identical entry is reported as `unchanged` and nothing is
+  written or backed up. A different entry of the same name is refused, with
+  both shown in the preview, unless you pass `--force`.
+- **Refusals.** `codex` and `zeroclaw` are print-only: Python's standard
+  library reads TOML but cannot write it, and Noetrail does not rewrite your
+  TOML by hand. A file that is not plain JSON (comments or trailing commas,
+  as JSONC and `opencode.jsonc` allow) or whose top level or server key is
+  not an object is refused; paste the printed block instead. A symbolic link
+  anywhere below your home directory (or below the directory the path starts
+  from) is refused, because a dotfile repository usually links these files;
+  pass `--config-file` with the real path to write it there. A host whose
+  configuration directory does not exist is refused as "does not look
+  installed here" rather than creating a vendor directory. A path inside a
+  Noetrail data, configuration, built-ins or skills root is always refused.
+- `--json` adds a `write` object to the usual keys: `path`, `action`,
+  `backup` (the backup path or `null`), `applied` (whether a file was
+  written) and `reason` (why it was refused, or `null`). A refusal still
+  prints the report, then exits non-zero with the reason on stderr.
+
+`--config-file` is the escape hatch for every path question: a project-level
+file, a linked file's real path, or a host installed somewhere unusual.
 
 ## Configure a desktop or editor host
 

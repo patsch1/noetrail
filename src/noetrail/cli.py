@@ -266,7 +266,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     connect = subparsers.add_parser(
         "connect",
-        help="print one MCP host's server configuration; writes nothing",
+        help=(
+            "print one MCP host's server configuration; writes it only with "
+            "--write --apply"
+        ),
     )
     connect.add_argument(
         "--client",
@@ -294,7 +297,38 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="report the configuration as JSON",
     )
-    connect.set_defaults(handler=command_connect, mutating=False)
+    connect.add_argument(
+        "--write",
+        action="store_true",
+        help=(
+            "merge the server entry into a JSON host's configuration file; "
+            "a preview unless --apply is given"
+        ),
+    )
+    connect.add_argument(
+        "--apply",
+        action="store_true",
+        help="with --write: write the previewed change, backing the file up first",
+    )
+    connect.add_argument(
+        "--config-file",
+        help=(
+            "with --write: the file to write instead of the host's documented "
+            "one; missing directories are created"
+        ),
+    )
+    connect.add_argument(
+        "--force",
+        action="store_true",
+        help="with --write: replace a different existing entry of the same name",
+    )
+    # `--write --apply` writes a host's file, so it declares itself mutating
+    # like `skills export`, although it runs before any vault lock and never
+    # opens a vault.
+    connect.set_defaults(
+        handler=command_connect,
+        mutating=lambda args: bool(args.write and args.apply),
+    )
 
     skills = subparsers.add_parser(
         "skills",
@@ -1023,6 +1057,7 @@ def run_command(argv: list[str] | None = None) -> int:
     # only program files and never opens a vault. `connect` only reads the
     # layout, and resolves it itself so it can find a quickstart instance;
     # it loads no schema and takes no lock, which would create a lock file.
+    # Its `--write --apply` writes a host's file, outside every root.
     if args.command in {"init", "quickstart", "skills", "connect"}:
         return args.handler(args)
     try:

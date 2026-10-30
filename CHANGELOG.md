@@ -6,6 +6,16 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- add `noetrail connect --client NAME --write` to merge the server entry
+  into a JSON host's configuration file (Claude Code, Claude Desktop, Cursor,
+  Gemini CLI, VS Code, OpenCode). It previews the change and writes it only
+  with `--apply`, backing the existing file up to
+  `FILE.<UTC timestamp>.bak` first and keeping every other server and key.
+  A different existing `noetrail` entry is replaced only with `--force`.
+  `--config-file PATH` chooses another file. It refuses TOML hosts (Codex,
+  ZeroClaw), files that are not plain JSON, symbolic links, a host directory
+  that does not exist, and any path inside a Noetrail root. `--json` adds a
+  `write` object. Without `--write`, `connect` still writes nothing.
 - add Cursor, Gemini CLI, VS Code and OpenCode to `noetrail connect
   --client`, as `cursor`, `gemini`, `vscode` and `opencode`. Each block uses
   the host's own key and fields: `"type": "stdio"` for Cursor and VS Code,

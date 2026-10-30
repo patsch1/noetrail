@@ -22,16 +22,10 @@ import os
 from pathlib import Path
 import re
 import stat
-import tempfile
 
+from noetrail.commands.safe_write import atomic_write, protected_roots
 from noetrail.errors import ConfigurationError, Conflict, InvalidRequest, StorageError
-from noetrail.layout import (
-    LayoutError,
-    default_config_root,
-    default_skills_root,
-    environment_config_root,
-    environment_data_root,
-)
+from noetrail.layout import LayoutError, default_skills_root
 
 # The Agent Skills naming rule: lowercase letters, digits, and inner hyphens.
 SKILL_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
@@ -93,22 +87,6 @@ def _skill_files(skill: Path) -> list[Path]:
     return files
 
 
-def _protected_roots(args: argparse.Namespace) -> list[Path]:
-    candidates: list[str | Path | None] = [
-        getattr(args, "root", None),
-        getattr(args, "data_root", None),
-        getattr(args, "config_root", None),
-        environment_data_root(),
-        environment_config_root(),
-        default_config_root(),
-    ]
-    return [
-        Path(value).expanduser().resolve()
-        for value in candidates
-        if value is not None
-    ]
-
-
 def _check_destination(path: Path, *, directory: bool) -> None:
     if path.is_symlink():
         raise Conflict(f"Refusing to write through a symbolic link: {path}")
@@ -150,26 +128,7 @@ def _plan_export(
 
 
 def _write_file(planned: PlannedFile) -> None:
-    content = planned.source.read_bytes()
-    planned.destination.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=planned.destination.parent,
-        prefix=f".{planned.destination.name}.",
-        suffix=".tmp",
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        # Like every other atomic write here: a replaced file keeps its mode,
-        # and a new one keeps mkstemp's owner-only mode.
-        if planned.destination.exists():
-            os.chmod(temporary, planned.destination.stat().st_mode & 0o777)
-        os.replace(temporary, planned.destination)
-    finally:
-        temporary.unlink(missing_ok=True)
+    atomic_write(planned.destination, planned.source.read_bytes())
 
 
 def command_skills_path(args: argparse.Namespace) -> int:
@@ -198,7 +157,7 @@ def command_skills_export(args: argparse.Namespace) -> int:
         raise InvalidRequest(
             f"Export target must not be inside the skills source: {source_root}"
         )
-    for protected in _protected_roots(args):
+    for protected in protected_roots(args):
         if target.is_relative_to(protected):
             raise InvalidRequest(
                 "Export target must not be inside a Noetrail data or "
