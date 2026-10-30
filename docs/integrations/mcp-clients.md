@@ -121,11 +121,19 @@ belongs in and the directory the host loads skills from:
 noetrail connect --client claude-code
 ```
 
+Codex CLI, Cursor, Gemini CLI, VS Code and OpenCode all read
+`~/.agents/skills`, so one `noetrail skills export ~/.agents/skills` serves
+them all.
+
 | `--client` | Host | Configuration | Skills directory |
 | --- | --- | --- | --- |
 | `claude-code` | Claude Code | `.mcp.json` in the project, or the printed `claude mcp add --scope user` line | `~/.claude/skills` |
 | `claude-desktop` | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows) | none |
 | `codex` | Codex CLI | `[mcp_servers.noetrail]` in `~/.codex/config.toml` (or `.codex/config.toml` in a trusted project), or the printed `codex mcp add` line | `~/.agents/skills`, or `.agents/skills` in a repository |
+| `cursor` | Cursor | `~/.cursor/mcp.json` (or `.cursor/mcp.json` in a project), with `"type": "stdio"` | `~/.agents/skills`; also `~/.cursor/skills`, `~/.claude/skills`, `~/.codex/skills` |
+| `gemini` | Gemini CLI | `mcpServers` in `~/.gemini/settings.json` (or `.gemini/settings.json` in a project), or the printed `gemini mcp add --scope user` line | `~/.agents/skills`; also `~/.gemini/skills` |
+| `vscode` | VS Code (Copilot) | `servers` with `"type": "stdio"` in `.vscode/mcp.json` in the workspace, the user profile's `mcp.json` (Command Palette: MCP: Open User Configuration), or the printed `code --add-mcp` line | `~/.copilot/skills`; also `~/.agents/skills`, `~/.claude/skills` |
+| `opencode` | OpenCode | `mcp` with `"type": "local"` and the command as one array in `~/.config/opencode/opencode.json` (or `opencode.json` in the project root, or the file `OPENCODE_CONFIG` names) | `~/.agents/skills`; also `~/.config/opencode/skills`, `~/.claude/skills` |
 | `zeroclaw` | ZeroClaw | `[[mcp.servers]]` in `~/.zeroclaw/config.toml`, in the `env -i` shape of the [deploy example](../../deploy/zeroclaw/security-profiles.example.toml) | `<zeroclaw-install>/shared/skills/knowledge-vault` |
 
 `connect` writes nothing: not the host's file, not the instance. Paste the
@@ -146,13 +154,13 @@ if the host loads skills. Without `--client` it lists the supported hosts.
   file), `format` (`json` or `toml`), `launcher`, `server` (the entry as it
   appears in the file), `snippet` (the text to paste), `skills_dir` and
   `skills_export` (`null` without a skills directory), and `mcp_add_command`
-  (the host's own `claude mcp add` or `codex mcp add` line, `null` for a host
-  without one). `quickstart --client NAME --json`
-  returns the same object under `connect` and keeps `mcp_config` unchanged.
+  (the host's own `claude mcp add`, `codex mcp add`, `gemini mcp add` or
+  `code --add-mcp` line, `null` for a host without one).
+  `quickstart --client NAME --json` returns the same object under `connect`
+  and keeps `mcp_config` unchanged.
 
 The host formats were taken from each vendor's documentation as of 2026-10-30;
-a host can change them in a later release. Cursor, Gemini CLI, VS Code and
-OpenCode are planned for the next change. For any other host, use the generic
+a host can change them in a later release. For any other host, use the generic
 block below.
 
 ## Configure a desktop or editor host

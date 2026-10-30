@@ -24,7 +24,31 @@ from tests import CLI_COMMAND, temporary_root
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 BUILTINS_ROOT = (REPOSITORY_ROOT / ".knowledge").resolve()
-CLIENTS = ("claude-code", "claude-desktop", "codex", "zeroclaw")
+CLIENTS = (
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "cursor",
+    "gemini",
+    "vscode",
+    "opencode",
+    "zeroclaw",
+)
+# The top-level key each JSON host keeps its servers under.
+JSON_KEYS = {
+    "claude-code": "mcpServers",
+    "claude-desktop": "mcpServers",
+    "cursor": "mcpServers",
+    "gemini": "mcpServers",
+    "vscode": "servers",
+    "opencode": "mcp",
+}
+SHARING_HOSTS = ("codex", "cursor", "gemini", "vscode", "opencode")
+SHARED_SKILLS_LINE = (
+    "Codex CLI, Cursor, Gemini CLI, VS Code and OpenCode all read "
+    "~/.agents/skills, so one `noetrail skills export ~/.agents/skills` "
+    "serves them all."
+)
 LAUNCHERS = ("console", "module", "uvx")
 ROOT_VARIABLES = (
     "NOETRAIL_DATA_ROOT",
@@ -56,8 +80,8 @@ def without_root_variables() -> dict[str, str]:
 def server_from_snippet(client: str, snippet: str) -> dict[str, object]:
     """Parse the pasted block the way the host would and return the server."""
 
-    if client in {"claude-code", "claude-desktop"}:
-        server = json.loads(snippet)["mcpServers"]["noetrail"]
+    if client in JSON_KEYS:
+        server = json.loads(snippet)[JSON_KEYS[client]]["noetrail"]
     elif client == "codex":
         server = tomllib.loads(snippet)["mcp_servers"]["noetrail"]
     else:
@@ -66,6 +90,17 @@ def server_from_snippet(client: str, snippet: str) -> dict[str, object]:
         server = servers[0]
     assert isinstance(server, dict)
     return server
+
+
+def server_argv(server: dict[str, object]) -> list[str]:
+    """The command and its arguments, whichever way the host spells them."""
+
+    command = server["command"]
+    if isinstance(command, list):
+        return [str(word) for word in command]
+    arguments = server["args"]
+    assert isinstance(arguments, list)
+    return [str(command), *[str(word) for word in arguments]]
 
 
 class ConnectTestCase(unittest.TestCase):
@@ -124,8 +159,7 @@ class EveryClientAndLauncherTest(ConnectTestCase):
                     assert isinstance(snippet, str)
                     server = server_from_snippet(client, snippet)
                     self.assertEqual(server, report["server"])
-                    arguments = server["args"]
-                    assert isinstance(arguments, list)
+                    arguments = server_argv(server)[1:]
                     data_index = arguments.index("--data-root")
                     config_index = arguments.index("--config-root")
                     self.assertEqual(arguments[data_index + 1], str(self.data))
@@ -164,6 +198,10 @@ class EveryClientAndLauncherTest(ConnectTestCase):
                 "claude-desktop": "json",
                 "codex": "toml",
                 "zeroclaw": "toml",
+                "cursor": "json",
+                "gemini": "json",
+                "vscode": "json",
+                "opencode": "json",
             },
         )
 
@@ -225,9 +263,11 @@ class LauncherTest(ConnectTestCase):
 
 class AddCommandTest(ConnectTestCase):
     def test_the_command_line_form_is_the_same_server(self) -> None:
-        for client, prefix in (
-            ("claude-code", ["claude", "mcp", "add", "--scope", "user"]),
-            ("codex", ["codex", "mcp", "add"]),
+        for client, prefix, separator in (
+            ("claude-code", ["claude", "mcp", "add", "--scope", "user"], ["--"]),
+            ("codex", ["codex", "mcp", "add"], ["--"]),
+            # Gemini CLI documents no `--`; the command follows the name.
+            ("gemini", ["gemini", "mcp", "add", "--scope", "user"], []),
         ):
             for launcher in LAUNCHERS:
                 with self.subTest(client=client, launcher=launcher):
@@ -237,18 +277,40 @@ class AddCommandTest(ConnectTestCase):
                     line = report["mcp_add_command"]
                     assert isinstance(line, str)
                     words = shlex.split(line)
-                    start = len(prefix) + 2
-                    self.assertEqual(words[:start], [*prefix, "noetrail", "--"])
+                    start = len(prefix) + 1 + len(separator)
+                    self.assertEqual(
+                        words[:start], [*prefix, "noetrail", *separator]
+                    )
                     server = report["server"]
                     assert isinstance(server, dict)
-                    self.assertEqual(
-                        words[start:], [server["command"], *server["args"]]
-                    )
+                    self.assertEqual(words[start:], server_argv(server))
+                    if not separator:
+                        self.assertNotIn("--", words)
+
+    def test_vscode_adds_one_json_object_with_the_name(self) -> None:
+        for launcher in LAUNCHERS:
+            with self.subTest(launcher=launcher):
+                report = self.connect("--client", "vscode", "--launcher", launcher)
+                line = report["mcp_add_command"]
+                assert isinstance(line, str)
+                words = shlex.split(line)
+                self.assertEqual(words[:2], ["code", "--add-mcp"])
+                self.assertEqual(len(words), 3)
+                definition = json.loads(words[2])
+                self.assertEqual(definition["name"], "noetrail")
+                server = report["server"]
+                assert isinstance(server, dict)
+                self.assertEqual(definition, {"name": "noetrail", **server})
+                # Compact, and quoted for a POSIX shell as one word.
+                self.assertNotIn(", ", words[2])
+                self.assertTrue(line.endswith("'"))
 
     def test_the_text_form_prints_the_command_after_the_block(self) -> None:
         for client, hint in (
             ("claude-code", "Or register it for every project from a shell:"),
             ("codex", "Or add it from a shell:"),
+            ("gemini", "Or add it for your user from a shell:"),
+            ("vscode", "Or add it to your user profile from a shell:"),
         ):
             with self.subTest(client=client):
                 text = self.run_cli("connect", "--client", client)
@@ -265,24 +327,29 @@ class AddCommandTest(ConnectTestCase):
         )
 
     def test_a_root_with_spaces_survives_shell_quoting(self) -> None:
-        spaced = self.base / "with space" / "data"
+        spaced = self.base / "with space" / "it's" / "data"
         spaced.mkdir(parents=True)
-        report = json.loads(
-            self.run_cli(
-                "--data-root",
-                str(spaced),
-                "--config-root",
-                str(self.config),
-                "connect",
-                "--client",
-                "claude-code",
-                "--json",
-            )
-        )
-        self.assertIn(str(spaced), shlex.split(report["mcp_add_command"]))
+        for client in ("claude-code", "gemini", "vscode"):
+            with self.subTest(client=client):
+                report = json.loads(
+                    self.run_cli(
+                        "--data-root",
+                        str(spaced),
+                        "--config-root",
+                        str(self.config),
+                        "connect",
+                        "--client",
+                        client,
+                        "--json",
+                    )
+                )
+                words = shlex.split(report["mcp_add_command"])
+                if client == "vscode":
+                    words = json.loads(words[-1])["args"]
+                self.assertIn(str(spaced), words)
 
     def test_other_hosts_have_no_command_line_form(self) -> None:
-        for client in ("claude-desktop", "zeroclaw"):
+        for client in ("claude-desktop", "zeroclaw", "cursor", "opencode"):
             with self.subTest(client=client):
                 self.assertIsNone(
                     self.connect("--client", client)["mcp_add_command"]
@@ -355,6 +422,102 @@ class HostTableTest(ConnectTestCase):
         snippet = report["snippet"]
         assert isinstance(snippet, str)
         self.assertTrue(snippet.startswith("[mcp_servers.noetrail]\n"))
+
+
+class JsonHostTest(ConnectTestCase):
+    """Cursor, Gemini CLI, VS Code and OpenCode, as their documentation says."""
+
+    def snippet(self, client: str, *arguments: str) -> dict[str, object]:
+        report = self.connect("--client", client, *arguments)
+        snippet = report["snippet"]
+        assert isinstance(snippet, str)
+        document = json.loads(snippet)
+        assert isinstance(document, dict)
+        return document
+
+    def test_cursor_and_vscode_carry_the_stdio_type(self) -> None:
+        for client, key in (("cursor", "mcpServers"), ("vscode", "servers")):
+            with self.subTest(client=client):
+                document = self.snippet(client)
+                self.assertEqual(list(document), [key])
+                server = document[key]["noetrail"]
+                self.assertEqual(list(server), ["type", "command", "args"])
+                self.assertEqual(server["type"], "stdio")
+
+    def test_gemini_has_no_type(self) -> None:
+        document = self.snippet("gemini")
+        self.assertEqual(list(document), ["mcpServers"])
+        self.assertEqual(
+            list(document["mcpServers"]["noetrail"]), ["command", "args"]
+        )
+
+    def test_opencode_uses_mcp_with_one_command_array(self) -> None:
+        for launcher in LAUNCHERS:
+            with self.subTest(launcher=launcher):
+                report = self.connect(
+                    "--client", "opencode", "--launcher", launcher
+                )
+                document = self.snippet("opencode", "--launcher", launcher)
+                self.assertEqual(list(document), ["$schema", "mcp"])
+                self.assertEqual(document["$schema"], "https://opencode.ai/config.json")
+                server = document["mcp"]["noetrail"]
+                self.assertEqual(server["type"], "local")
+                self.assertIs(server["enabled"], True)
+                self.assertNotIn("args", server)
+                command = server["command"]
+                self.assertIsInstance(command, list)
+                expected = connect_module.launcher_argv(launcher)
+                self.assertEqual(command[: len(expected)], expected)
+                self.assertEqual(
+                    command[len(expected) :],
+                    ["--data-root", str(self.data), "--config-root", str(self.config)],
+                )
+                self.assertEqual(server, report["server"])
+
+    def test_configuration_files_and_skills_directories(self) -> None:
+        expected = {
+            "cursor": ("~/.cursor/mcp.json", "~/.agents/skills"),
+            "gemini": ("~/.gemini/settings.json", "~/.agents/skills"),
+            "vscode": (".vscode/mcp.json", "~/.copilot/skills"),
+            "opencode": ("~/.config/opencode/opencode.json", "~/.agents/skills"),
+        }
+        for client, (config_path, skills_dir) in expected.items():
+            with self.subTest(client=client):
+                report = self.connect("--client", client)
+                self.assertEqual(report["config_path"], config_path)
+                self.assertEqual(report["skills_dir"], skills_dir)
+                self.assertEqual(
+                    report["skills_export"], f"noetrail skills export {skills_dir}"
+                )
+
+    def test_the_text_names_the_alternatives(self) -> None:
+        for client, phrases in (
+            ("cursor", [".cursor/mcp.json in a project", "~/.codex/skills"]),
+            ("gemini", [".gemini/settings.json in a project", "~/.gemini/skills"]),
+            (
+                "vscode",
+                ["MCP: Open User Configuration", "~/.agents/skills is the shared"],
+            ),
+            ("opencode", ["opencode.json in the project root", "OPENCODE_CONFIG"]),
+        ):
+            with self.subTest(client=client):
+                text = self.run_cli("connect", "--client", client)
+                for phrase in phrases:
+                    self.assertIn(phrase, text)
+
+    def test_hosts_sharing_agents_skills_say_so_once(self) -> None:
+        for client in CLIENTS:
+            with self.subTest(client=client):
+                text = self.run_cli("connect", "--client", client)
+                self.assertEqual(
+                    text.count(SHARED_SKILLS_LINE),
+                    1 if client in SHARING_HOSTS else 0,
+                )
+
+    def test_spoken_lists(self) -> None:
+        self.assertEqual(connect_module.spoken_list([]), "")
+        self.assertEqual(connect_module.spoken_list(["A"]), "A")
+        self.assertEqual(connect_module.spoken_list(["A", "B", "C"]), "A, B and C")
 
 
 class ZeroClawShapeTest(ConnectTestCase):

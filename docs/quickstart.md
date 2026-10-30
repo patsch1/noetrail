@@ -20,7 +20,7 @@ virtual-environment and TestPyPI alternatives. From a checkout the same command 
 `.venv/bin/noetrail quickstart`, which is what the rest of this page uses. It
 creates `~/noetrail/data` and `~/noetrail/config` (override with `--path`),
 writes three sample entries, and prints the MCP server block; with
-`--client claude-code` (or `claude-desktop`, `codex`, `zeroclaw`) it prints
+`--client claude-code` (or another host `noetrail connect` lists) it prints
 that host's own block instead, which `noetrail connect --client NAME` repeats
 at any time. With `uvx`, use
 the [uvx client configuration](integrations/mcp-clients.md#install-and-get-the-configuration-block)

@@ -5,8 +5,9 @@
 something like it, but not where or in the form a reader would guess: Claude
 Code keeps it in `.mcp.json` or behind `claude mcp add`, Claude Desktop in a
 platform-specific application directory, Codex in TOML under a different key,
-and ZeroClaw in TOML wrapped in `env -i`. Each difference is one more thing to
-look up before the first answer.
+VS Code under `servers` with a required `type`, OpenCode under `mcp` with the
+command as one array, and ZeroClaw in TOML wrapped in `env -i`. Each
+difference is one more thing to look up before the first answer.
 
 `connect` prints the block for a named host with this instance's absolute
 roots, where the host reads it from, and where the host loads skills from. It
@@ -57,19 +58,33 @@ ZEROCLAW_ENVIRONMENT = (
 )
 ZEROCLAW_TOOL_TIMEOUT_SECONDS = 30
 
+# The user-level skills directory several hosts read besides their own, so a
+# single `noetrail skills export` there reaches all of them.
+SHARED_SKILLS_DIR = "~/.agents/skills"
+
 
 @dataclass(frozen=True)
 class Host:
     """What one MCP host needs to know to start the Noetrail server.
 
     ``shape`` names how the server entry is laid out: ``mcp-servers-json`` is
-    ``{"mcpServers": {NAME: {"command", "args"}}}``, ``codex-toml`` is a
-    ``[mcp_servers.NAME]`` table with ``command`` and ``args``, and
-    ``zeroclaw-toml`` is one ``[[mcp.servers]]`` element in the shape of
-    ``deploy/zeroclaw/security-profiles.example.toml``.
+    ``{TOP_LEVEL_KEY: {NAME: {"command", "args"}}}``, with ``"type":
+    SERVER_TYPE`` first when the host requires one; ``opencode-json`` is
+    ``{TOP_LEVEL_KEY: {NAME: {"type", "command": [COMMAND, ARGS...],
+    "enabled"}}}``; ``codex-toml`` is a ``[mcp_servers.NAME]`` table with
+    ``command`` and ``args``; and ``zeroclaw-toml`` is one ``[[mcp.servers]]``
+    element in the shape of ``deploy/zeroclaw/security-profiles.example.toml``.
+    ``json_schema``, when set, is the ``$schema`` the host's examples put at
+    the top of a JSON file.
 
-    ``add_command`` is the host's own command for registering a stdio server,
-    up to the server name; ``NAME -- COMMAND ARGS...`` follows it.
+    ``add_command`` is the host's own command for registering a stdio server.
+    ``add_style`` says what follows it: ``separator`` is ``NAME -- COMMAND
+    ARGS...``, ``positional`` is ``NAME COMMAND ARGS...`` for a host without a
+    ``--`` separator, and ``json`` is one argument holding the server entry as
+    compact JSON with its ``name``.
+
+    ``other_skills_dirs`` are further user-level directories the host loads
+    skills from; ``skills_dir`` is the one ``connect`` recommends.
     """
 
     name: str
@@ -81,8 +96,12 @@ class Host:
     server_name: str
     skills_dir: str | None
     config_hint: str = ""
+    server_type: str | None = None
+    json_schema: str | None = None
     add_command: tuple[str, ...] = ()
+    add_style: str = "separator"
     add_command_hint: str = ""
+    other_skills_dirs: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
 
 
@@ -164,6 +183,155 @@ HOSTS: tuple[Host, ...] = (
         notes=(
             "A repository-level .agents/skills directory works for skills "
             "too.",
+        ),
+    ),
+    # Source: Cursor documentation, as read on 2026-10-30.
+    # - "Model Context Protocol (MCP)" (https://cursor.com/docs/context/mcp):
+    #   `.cursor/mcp.json` in a project, `~/.cursor/mcp.json` globally, on
+    #   every platform; `{"mcpServers": {NAME: {"type", "command", "args"}}}`.
+    #   The field table lists `type: "stdio"` as required although the
+    #   examples omit it, so it is printed. There is no command-line form.
+    # - "Agent Skills" (https://cursor.com/docs/context/skills): project
+    #   `.agents/skills/` or `.cursor/skills/`, user `~/.agents/skills/` or
+    #   `~/.cursor/skills/`, and for compatibility `.claude/skills`,
+    #   `.codex/skills`, `~/.claude/skills` and `~/.codex/skills`.
+    Host(
+        name="cursor",
+        display_name="Cursor",
+        config_paths={
+            "macos": "~/.cursor/mcp.json",
+            "linux": "~/.cursor/mcp.json",
+            "windows": "~/.cursor/mcp.json",
+        },
+        config_format="json",
+        top_level_key="mcpServers",
+        shape="mcp-servers-json",
+        server_name="noetrail",
+        skills_dir="~/.agents/skills",
+        config_hint="or .cursor/mcp.json in a project",
+        server_type="stdio",
+        other_skills_dirs=("~/.cursor/skills", "~/.claude/skills", "~/.codex/skills"),
+        notes=(
+            "A project-level .agents/skills or .cursor/skills directory works "
+            "for skills too.",
+        ),
+    ),
+    # Source: Gemini CLI documentation, as read on 2026-10-30.
+    # - "MCP servers with the Gemini CLI"
+    #   (https://geminicli.com/docs/tools/mcp-server/): `mcpServers` with
+    #   `command` and `args` in `~/.gemini/settings.json` or a project's
+    #   `.gemini/settings.json`; the optional `timeout` and `trust` are left
+    #   unset; server names should avoid underscores, which `noetrail` does.
+    #   `gemini mcp add [options] <name> <commandOrUrl> [args...]` with
+    #   `-s, --scope user|project` (default project) and no `--` separator.
+    # - "Agent Skills" (https://geminicli.com/docs/cli/skills/): user
+    #   `~/.gemini/skills/` or the alias `~/.agents/skills/`, workspace
+    #   `.gemini/skills/` or `.agents/skills/`; within a tier `.agents/skills`
+    #   takes precedence.
+    # The same page says Gemini CLI was replaced by Antigravity CLI for
+    # unpaid-tier and Google One users on 2026-06-18; the client keeps the
+    # name `gemini`, which is the command it documents.
+    Host(
+        name="gemini",
+        display_name="Gemini CLI",
+        config_paths={
+            "macos": "~/.gemini/settings.json",
+            "linux": "~/.gemini/settings.json",
+            "windows": "~/.gemini/settings.json",
+        },
+        config_format="json",
+        top_level_key="mcpServers",
+        shape="mcp-servers-json",
+        server_name="noetrail",
+        skills_dir="~/.agents/skills",
+        config_hint="or .gemini/settings.json in a project",
+        add_command=("gemini", "mcp", "add", "--scope", "user"),
+        add_style="positional",
+        add_command_hint="Or add it for your user from a shell:",
+        other_skills_dirs=("~/.gemini/skills",),
+        notes=(
+            "A workspace-level .agents/skills or .gemini/skills directory "
+            "works for skills too; within a level, .agents/skills takes "
+            "precedence.",
+        ),
+    ),
+    # Source: Visual Studio Code documentation, as read on 2026-10-30.
+    # - "MCP configuration reference"
+    #   (https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)
+    #   and "Use MCP servers in VS Code"
+    #   (https://code.visualstudio.com/docs/copilot/customization/mcp-servers):
+    #   `.vscode/mcp.json` in a workspace, or the user profile's `mcp.json`
+    #   through the Command Palette command "MCP: Open User Configuration",
+    #   which has no stable path to print; `{"servers": {NAME: {"type":
+    #   "stdio", "command", "args"}}}`; `code --add-mcp '<json>'` with one
+    #   object carrying `name` adds it to the user profile.
+    # - "Use Agent Skills in VS Code"
+    #   (https://code.visualstudio.com/docs/copilot/customization/agent-skills):
+    #   workspace `.github/skills/`, `.claude/skills/` and `.agents/skills/`;
+    #   user `~/.copilot/skills/`, `~/.claude/skills/` and `~/.agents/skills/`.
+    #   `~/.copilot/skills` is the directory Copilot itself reads.
+    Host(
+        name="vscode",
+        display_name="VS Code",
+        config_paths={
+            "macos": ".vscode/mcp.json",
+            "linux": ".vscode/mcp.json",
+            "windows": ".vscode/mcp.json",
+        },
+        config_format="json",
+        top_level_key="servers",
+        shape="mcp-servers-json",
+        server_name="noetrail",
+        skills_dir="~/.copilot/skills",
+        config_hint=(
+            "in the workspace, or the user profile's mcp.json through the "
+            "Command Palette: MCP: Open User Configuration"
+        ),
+        server_type="stdio",
+        add_command=("code", "--add-mcp"),
+        add_style="json",
+        add_command_hint="Or add it to your user profile from a shell:",
+        other_skills_dirs=("~/.agents/skills", "~/.claude/skills"),
+        notes=(
+            "~/.copilot/skills is the directory Copilot itself reads; "
+            "~/.agents/skills is the shared alternative. A workspace-level "
+            ".github/skills, .claude/skills or .agents/skills directory works "
+            "too.",
+        ),
+    ),
+    # Source: OpenCode documentation, as read on 2026-10-30.
+    # - "MCP servers" (https://opencode.ai/docs/mcp-servers/) and "Config"
+    #   (https://opencode.ai/docs/config/): `opencode.json` (or
+    #   `opencode.jsonc`) in the project root, `~/.config/opencode/opencode.json`
+    #   globally, or a file named by `OPENCODE_CONFIG`; `{"mcp": {NAME:
+    #   {"type": "local", "command": [COMMAND, ARGS...], "enabled": true}}}`.
+    #   `$schema` is optional; every example carries it, so it is printed.
+    #   There is no command-line form.
+    # - "Agent Skills" (https://opencode.ai/docs/skills/): project
+    #   `.opencode/skills/`, `.claude/skills/` and `.agents/skills/`; global
+    #   `~/.config/opencode/skills/`, `~/.claude/skills/` and
+    #   `~/.agents/skills/`.
+    Host(
+        name="opencode",
+        display_name="OpenCode",
+        config_paths={
+            "macos": "~/.config/opencode/opencode.json",
+            "linux": "~/.config/opencode/opencode.json",
+            "windows": "~/.config/opencode/opencode.json",
+        },
+        config_format="json",
+        top_level_key="mcp",
+        shape="opencode-json",
+        server_name="noetrail",
+        skills_dir="~/.agents/skills",
+        config_hint="or opencode.json in the project root",
+        server_type="local",
+        json_schema="https://opencode.ai/config.json",
+        other_skills_dirs=("~/.config/opencode/skills", "~/.claude/skills"),
+        notes=(
+            "OPENCODE_CONFIG can name another configuration file. A "
+            "project-level .opencode/skills, .claude/skills or .agents/skills "
+            "directory works for skills too.",
         ),
     ),
     # Source: this repository's `deploy/zeroclaw/security-profiles.example.toml`
@@ -299,8 +467,19 @@ def server_command(
 def server_entry(host: Host, command: str, arguments: list[str]) -> dict[str, object]:
     """The server definition exactly as it goes into the host's file."""
 
+    if host.shape == "opencode-json":
+        return {
+            "type": host.server_type,
+            "command": [command, *arguments],
+            "enabled": True,
+        }
     if host.shape != "zeroclaw-toml":
-        return {"command": command, "args": arguments}
+        entry: dict[str, object] = {}
+        if host.server_type is not None:
+            entry["type"] = host.server_type
+        entry["command"] = command
+        entry["args"] = arguments
+        return entry
     return {
         "name": host.server_name,
         "transport": "stdio",
@@ -351,16 +530,14 @@ def toml_array(values: list[str]) -> str:
 def render_snippet(host: Host, command: str, arguments: list[str]) -> str:
     """The block a reader pastes into the host's configuration file."""
 
-    if host.shape == "mcp-servers-json":
-        return json.dumps(
-            {
-                host.top_level_key: {
-                    host.server_name: server_entry(host, command, arguments)
-                }
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
+    if host.config_format == "json":
+        document: dict[str, object] = {}
+        if host.json_schema is not None:
+            document["$schema"] = host.json_schema
+        document[host.top_level_key] = {
+            host.server_name: server_entry(host, command, arguments)
+        }
+        return json.dumps(document, ensure_ascii=False, indent=2)
     if host.shape == "codex-toml":
         return "\n".join(
             [
@@ -386,8 +563,40 @@ def mcp_add_command(host: Host, command: str, arguments: list[str]) -> str | Non
 
     if not host.add_command:
         return None
-    return shlex.join(
-        [*host.add_command, host.server_name, "--", command, *arguments]
+    if host.add_style == "json":
+        definition = {
+            "name": host.server_name,
+            **server_entry(host, command, arguments),
+        }
+        tail = [json.dumps(definition, ensure_ascii=False, separators=(",", ":"))]
+    elif host.add_style == "positional":
+        tail = [host.server_name, command, *arguments]
+    else:
+        tail = [host.server_name, "--", command, *arguments]
+    return shlex.join([*host.add_command, *tail])
+
+
+def spoken_list(names: list[str]) -> str:
+    """``A, B and C``."""
+
+    if len(names) < 2:
+        return "".join(names)
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
+def shared_skills_line(host: Host) -> str | None:
+    """The one sentence saying which hosts share ``SHARED_SKILLS_DIR``."""
+
+    sharing = [
+        other.display_name
+        for other in HOSTS
+        if SHARED_SKILLS_DIR in (other.skills_dir, *other.other_skills_dirs)
+    ]
+    if host.display_name not in sharing:
+        return None
+    return (
+        f"{spoken_list(sharing)} all read {SHARED_SKILLS_DIR}, so one "
+        f"`noetrail skills export {SHARED_SKILLS_DIR}` serves them all."
     )
 
 
@@ -456,6 +665,17 @@ def render_text(host: Host, report: Mapping[str, object]) -> str:
             "",
             f"  {report['skills_export']}",
         ]
+        alternatives: list[str] = []
+        if host.other_skills_dirs:
+            alternatives.append(
+                f"{host.display_name} also reads skills from "
+                f"{spoken_list(list(host.other_skills_dirs))}."
+            )
+        shared = shared_skills_line(host)
+        if shared is not None:
+            alternatives.append(shared)
+        if alternatives:
+            lines += ["", *alternatives]
     if host.notes:
         lines.append("")
         lines += list(host.notes)
