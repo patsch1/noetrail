@@ -153,7 +153,7 @@ class SkillsCommandTest(unittest.TestCase):
                     (self.source / name / relative).read_bytes(),
                 )
                 self.assertIn(str(copied), output)
-                self.assertEqual(copied.stat().st_mode & 0o777, 0o644)
+                self.assertEqual(copied.stat().st_mode & 0o777, 0o600)
         self.assertEqual(
             sorted(path.name for path in self.target.iterdir()), ["alpha", "beta"]
         )
@@ -208,6 +208,9 @@ class SkillsCommandTest(unittest.TestCase):
             shipped.read_bytes(), (self.source / "alpha" / "SKILL.md").read_bytes()
         )
         self.assertEqual(added.read_text(encoding="utf-8"), "kept")
+        shipped.chmod(0o640)
+        self.run_cli("skills", "export", str(self.target), "--force")
+        self.assertEqual(shipped.stat().st_mode & 0o777, 0o640)
 
     def test_export_never_follows_a_link_in_the_target(self) -> None:
         outside = self.base / "outside"

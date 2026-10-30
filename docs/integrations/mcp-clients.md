@@ -176,6 +176,7 @@ noetrail skills export ~/.agents/skills
 `DIRECTORY/<name>/`, creating `DIRECTORY` if needed; point it at the directory
 your host loads skills from. It refuses to overwrite a skill directory that is
 not empty; `--force` replaces the shipped files and keeps any file you added.
+New files are readable only by you; a replaced file keeps its mode.
 It never writes through a symbolic link and refuses a target inside a
 Noetrail data or configuration root. With `uvx`, run the same commands as
 `uvx --from 'noetrail==<version>' noetrail skills export DIRECTORY`.

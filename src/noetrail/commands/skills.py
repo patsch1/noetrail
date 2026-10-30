@@ -163,7 +163,10 @@ def _write_file(planned: PlannedFile) -> None:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
-        os.chmod(temporary, 0o644)
+        # Like every other atomic write here: a replaced file keeps its mode,
+        # and a new one keeps mkstemp's owner-only mode.
+        if planned.destination.exists():
+            os.chmod(temporary, planned.destination.stat().st_mode & 0o777)
         os.replace(temporary, planned.destination)
     finally:
         temporary.unlink(missing_ok=True)
