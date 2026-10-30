@@ -15,10 +15,19 @@ import shutil
 import subprocess
 import unittest
 
+from noetrail.version import FALLBACK_VERSION
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 GIT = shutil.which("git")
 ISSUE_TEMPLATES = REPOSITORY_ROOT / ".github" / "ISSUE_TEMPLATE"
 MAINTAINER_EMAIL = "patrick.schiffler@yahoo.de"
+
+# The release line SECURITY.md must call current, e.g. "0.11.x" for 0.11.0a1.
+# FALLBACK_VERSION is the source copy that check_release_consistency.py holds
+# equal to the pyproject version, so a release cannot leave the table behind.
+_MAJOR, _MINOR = (int(part) for part in FALLBACK_VERSION.split(".")[:2])
+CURRENT_LINE = f"{_MAJOR}.{_MINOR}.x"
+PREVIOUS_LINE = f"{_MAJOR}.{_MINOR - 1}.x"
 
 # The environment facts SUPPORT.md asks every reporter for. Before the issue
 # forms existed, it asked and nothing enforced it.
@@ -171,7 +180,22 @@ class SecurityPolicyTest(unittest.TestCase):
         )
         # A supported-version table, not a promise to write one later.
         self.assertIn("## Supported versions", policy)
-        self.assertIn("0.10.x", policy)
+        # Rows look like: | `0.11.x` (current alpha line) | yes |
+        rows = {
+            line: (note.strip(), supported)
+            for line, note, supported in re.findall(
+                r"^\| `([^`]+)`([^|]*)\| ([^|]+?) \|$", policy, re.MULTILINE
+            )
+        }
+        self.assertIn(CURRENT_LINE, rows, "the package's release line has a row")
+        note, supported = rows[CURRENT_LINE]
+        self.assertIn("current", note, f"{CURRENT_LINE} is marked as the current line")
+        self.assertEqual(supported, "yes")
+        self.assertIn(PREVIOUS_LINE, rows, "the line it replaced has a row")
+        self.assertTrue(
+            rows[PREVIOUS_LINE][1].startswith("no"),
+            f"{PREVIOUS_LINE} is no longer supported",
+        )
 
 
 class RenameTest(unittest.TestCase):
