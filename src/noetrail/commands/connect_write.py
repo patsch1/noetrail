@@ -37,14 +37,34 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING
+from typing import Protocol
 
 from noetrail.commands.safe_write import atomic_write, protected_roots
 from noetrail.errors import Conflict, InvalidRequest, NoetrailError, StorageError
 from noetrail.layout import LayoutError, NoetrailLayout, default_skills_root
 
-if TYPE_CHECKING:
-    from noetrail.commands.connect import Host
+
+class Host(Protocol):
+    """The part of `connect.Host` a write needs.
+
+    Spelled out here rather than imported, because `connect` imports this
+    module and a cycle would make the import order matter.
+    """
+
+    @property
+    def name(self) -> str: ...
+    @property
+    def display_name(self) -> str: ...
+    @property
+    def config_format(self) -> str: ...
+    @property
+    def top_level_key(self) -> str: ...
+    @property
+    def server_name(self) -> str: ...
+    @property
+    def json_schema(self) -> str | None: ...
+    @property
+    def notes(self) -> tuple[str, ...]: ...
 
 # A leading `%NAME%`, `${NAME}` or `$NAME`, as a configuration path from the
 # host table may start with one.

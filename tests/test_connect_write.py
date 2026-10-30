@@ -157,7 +157,8 @@ class PreviewAndApplyTest(ConnectWriteTestCase):
             "nested": {"list": [1, 2.5, None, True], "text": "ümlaut"},
         }
         self.make_cursor_file(json.dumps(original, indent=2) + "\n")
-        os.chmod(self.cursor_file, 0o640)
+        # Owner-only, but not the 0600 a new file gets, so keeping it shows.
+        os.chmod(self.cursor_file, 0o700)
         with patch.object(connect_write, "utc_now", return_value=FIXED_NOW):
             report = self.write_json("cursor", "--apply")
         backup = self.cursor_file.with_name(f"mcp.json.{FIXED_STAMP}.bak")
@@ -174,7 +175,7 @@ class PreviewAndApplyTest(ConnectWriteTestCase):
             {"other": OTHER_SERVER, "noetrail": self.entry("cursor")},
         )
         # The mode is kept; the backup is owner-only and byte-identical.
-        self.assertEqual(stat.S_IMODE(self.cursor_file.stat().st_mode), 0o640)
+        self.assertEqual(stat.S_IMODE(self.cursor_file.stat().st_mode), 0o700)
         self.assertEqual(stat.S_IMODE(backup.stat().st_mode), 0o600)
         self.assertEqual(
             json.loads(backup.read_text(encoding="utf-8")), original
