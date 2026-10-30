@@ -17,8 +17,9 @@ All notable user-visible changes will be documented here. The project follows
 - add `noetrail connect --client NAME` to print the MCP server configuration
   for Claude Code, Claude Desktop, Codex CLI, or ZeroClaw in that host's own
   format and key, with the instance's absolute roots, the configuration file
-  it belongs in, and the host's skills directory with the matching
-  `noetrail skills export` line. `--launcher console|module|uvx` selects
+  it belongs in, the host's skills directory with the matching
+  `noetrail skills export` line, and for Claude Code and Codex the equivalent
+  `claude mcp add` or `codex mcp add` line. `--launcher console|module|uvx` selects
   `noetrail-mcp`, the running interpreter with `-m noetrail.mcp`, or `uvx`
   pinned to the installed version; `--json` returns a fixed key set.
   Without root options it uses the instance `quickstart` created. It writes

@@ -67,6 +67,9 @@ class Host:
     ``[mcp_servers.NAME]`` table with ``command`` and ``args``, and
     ``zeroclaw-toml`` is one ``[[mcp.servers]]`` element in the shape of
     ``deploy/zeroclaw/security-profiles.example.toml``.
+
+    ``add_command`` is the host's own command for registering a stdio server,
+    up to the server name; ``NAME -- COMMAND ARGS...`` follows it.
     """
 
     name: str
@@ -78,6 +81,8 @@ class Host:
     server_name: str
     skills_dir: str | None
     config_hint: str = ""
+    add_command: tuple[str, ...] = ()
+    add_command_hint: str = ""
     notes: tuple[str, ...] = ()
 
 
@@ -102,6 +107,8 @@ HOSTS: tuple[Host, ...] = (
         config_hint=(
             "in the project root, or user scope through `claude mcp add`"
         ),
+        add_command=("claude", "mcp", "add", "--scope", "user"),
+        add_command_hint="Or register it for every project from a shell:",
     ),
     # Source: Anthropic, "Getting started with local MCP servers on Claude
     # Desktop" and the Model Context Protocol "Connect to local MCP servers"
@@ -124,10 +131,20 @@ HOSTS: tuple[Host, ...] = (
         skills_dir=None,
         notes=("Restart Claude Desktop after changing its configuration.",),
     ),
-    # Source: OpenAI, Codex documentation, "Model Context Protocol"
-    # (`[mcp_servers.<name>]` in `~/.codex/config.toml`) and "Agent Skills"
-    # (`~/.codex/skills/<name>/`, with the `agents/openai.yaml` overlay the
-    # skills here carry), as read on 2026-10-30.
+    # Source: OpenAI, Codex documentation, as read on 2026-10-30.
+    # - "Model Context Protocol" (https://developers.openai.com/codex/mcp,
+    #   redirecting to https://learn.chatgpt.com/docs/extend/mcp?surface=cli):
+    #   `[mcp_servers.<name>]` with `command` and `args` in
+    #   `~/.codex/config.toml`, or `.codex/config.toml` in a trusted project;
+    #   `codex mcp add <server-name> -- <stdio server-command>`.
+    # - "Agent Skills" (https://developers.openai.com/codex/skills,
+    #   redirecting to https://learn.chatgpt.com/docs/build-skills): user
+    #   skills in `$HOME/.agents/skills`; repository skills in `.agents/skills`
+    #   in the current directory, a parent inside the repository, or the
+    #   repository root; admin-wide skills in `/etc/codex/skills`. The skills
+    #   here carry Codex's `agents/openai.yaml` overlay.
+    # A `$CODEX_HOME` override is not printed: neither page nor the Codex
+    # repository's `docs/config.md` (checked the same day) mentions it.
     Host(
         name="codex",
         display_name="Codex CLI",
@@ -140,8 +157,14 @@ HOSTS: tuple[Host, ...] = (
         top_level_key="mcp_servers",
         shape="codex-toml",
         server_name="noetrail",
-        skills_dir="~/.codex/skills",
-        config_hint="or $CODEX_HOME/config.toml when CODEX_HOME is set",
+        skills_dir="~/.agents/skills",
+        config_hint="or .codex/config.toml in a trusted project",
+        add_command=("codex", "mcp", "add"),
+        add_command_hint="Or add it from a shell:",
+        notes=(
+            "A repository-level .agents/skills directory works for skills "
+            "too.",
+        ),
     ),
     # Source: this repository's `deploy/zeroclaw/security-profiles.example.toml`
     # and `docs/integrations/zeroclaw-setup.md`, checked against ZeroClaw
@@ -358,21 +381,13 @@ def render_snippet(host: Host, command: str, arguments: list[str]) -> str:
     )
 
 
-def claude_mcp_add(host: Host, command: str, arguments: list[str]) -> str:
-    """The `claude mcp add` line equivalent to the JSON block (POSIX quoting)."""
+def mcp_add_command(host: Host, command: str, arguments: list[str]) -> str | None:
+    """The host's own registration command for the block (POSIX quoting)."""
 
+    if not host.add_command:
+        return None
     return shlex.join(
-        [
-            "claude",
-            "mcp",
-            "add",
-            "--scope",
-            "user",
-            host.server_name,
-            "--",
-            command,
-            *arguments,
-        ]
+        [*host.add_command, host.server_name, "--", command, *arguments]
     )
 
 
@@ -402,11 +417,7 @@ def connection(
             if host.skills_dir is not None
             else None
         ),
-        "claude_mcp_add": (
-            claude_mcp_add(host, command, arguments)
-            if host.name == "claude-code"
-            else None
-        ),
+        "mcp_add_command": mcp_add_command(host, command, arguments),
     }
 
 
@@ -430,12 +441,12 @@ def render_text(host: Host, report: Mapping[str, object]) -> str:
         "",
         str(report["snippet"]),
     ]
-    if report["claude_mcp_add"] is not None:
+    if report["mcp_add_command"] is not None:
         lines += [
             "",
-            "Or register it for every project from a shell:",
+            host.add_command_hint,
             "",
-            f"  {report['claude_mcp_add']}",
+            f"  {report['mcp_add_command']}",
         ]
     if report["skills_dir"] is not None:
         lines += [

@@ -125,7 +125,7 @@ noetrail connect --client claude-code
 | --- | --- | --- | --- |
 | `claude-code` | Claude Code | `.mcp.json` in the project, or the printed `claude mcp add --scope user` line | `~/.claude/skills` |
 | `claude-desktop` | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows) | none |
-| `codex` | Codex CLI | `[mcp_servers.noetrail]` in `~/.codex/config.toml` | `~/.codex/skills` |
+| `codex` | Codex CLI | `[mcp_servers.noetrail]` in `~/.codex/config.toml` (or `.codex/config.toml` in a trusted project), or the printed `codex mcp add` line | `~/.agents/skills`, or `.agents/skills` in a repository |
 | `zeroclaw` | ZeroClaw | `[[mcp.servers]]` in `~/.zeroclaw/config.toml`, in the `env -i` shape of the [deploy example](../../deploy/zeroclaw/security-profiles.example.toml) | `<zeroclaw-install>/shared/skills/knowledge-vault` |
 
 `connect` writes nothing: not the host's file, not the instance. Paste the
@@ -145,8 +145,9 @@ if the host loads skills. Without `--client` it lists the supported hosts.
   current platform, `~` unexpanded, `null` where the host has no documented
   file), `format` (`json` or `toml`), `launcher`, `server` (the entry as it
   appears in the file), `snippet` (the text to paste), `skills_dir` and
-  `skills_export` (`null` without a skills directory), and `claude_mcp_add`
-  (`null` except for `claude-code`). `quickstart --client NAME --json`
+  `skills_export` (`null` without a skills directory), and `mcp_add_command`
+  (the host's own `claude mcp add` or `codex mcp add` line, `null` for a host
+  without one). `quickstart --client NAME --json`
   returns the same object under `connect` and keeps `mcp_config` unchanged.
 
 The host formats were taken from each vendor's documentation as of 2026-10-30;

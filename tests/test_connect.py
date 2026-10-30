@@ -43,7 +43,7 @@ REPORT_KEYS = {
     "snippet",
     "skills_dir",
     "skills_export",
-    "claude_mcp_add",
+    "mcp_add_command",
 }
 
 
@@ -223,18 +223,42 @@ class LauncherTest(ConnectTestCase):
         )
 
 
-class ClaudeCodeTest(ConnectTestCase):
+class AddCommandTest(ConnectTestCase):
     def test_the_command_line_form_is_the_same_server(self) -> None:
-        report = self.connect("--client", "claude-code", "--launcher", "module")
-        line = report["claude_mcp_add"]
-        assert isinstance(line, str)
-        words = shlex.split(line)
-        self.assertEqual(
-            words[:7], ["claude", "mcp", "add", "--scope", "user", "noetrail", "--"]
-        )
-        server = report["server"]
-        assert isinstance(server, dict)
-        self.assertEqual(words[7:], [server["command"], *server["args"]])
+        for client, prefix in (
+            ("claude-code", ["claude", "mcp", "add", "--scope", "user"]),
+            ("codex", ["codex", "mcp", "add"]),
+        ):
+            for launcher in LAUNCHERS:
+                with self.subTest(client=client, launcher=launcher):
+                    report = self.connect(
+                        "--client", client, "--launcher", launcher
+                    )
+                    line = report["mcp_add_command"]
+                    assert isinstance(line, str)
+                    words = shlex.split(line)
+                    start = len(prefix) + 2
+                    self.assertEqual(words[:start], [*prefix, "noetrail", "--"])
+                    server = report["server"]
+                    assert isinstance(server, dict)
+                    self.assertEqual(
+                        words[start:], [server["command"], *server["args"]]
+                    )
+
+    def test_the_text_form_prints_the_command_after_the_block(self) -> None:
+        for client, hint in (
+            ("claude-code", "Or register it for every project from a shell:"),
+            ("codex", "Or add it from a shell:"),
+        ):
+            with self.subTest(client=client):
+                text = self.run_cli("connect", "--client", client)
+                report = self.connect("--client", client)
+                block = text.index(str(report["snippet"]))
+                self.assertGreater(text.index(hint), block)
+                self.assertIn(f"  {report['mcp_add_command']}", text)
+
+    def test_claude_code_skills_directory(self) -> None:
+        report = self.connect("--client", "claude-code")
         self.assertEqual(report["skills_dir"], "~/.claude/skills")
         self.assertEqual(
             report["skills_export"], "noetrail skills export ~/.claude/skills"
@@ -255,12 +279,14 @@ class ClaudeCodeTest(ConnectTestCase):
                 "--json",
             )
         )
-        self.assertIn(str(spaced), shlex.split(report["claude_mcp_add"]))
+        self.assertIn(str(spaced), shlex.split(report["mcp_add_command"]))
 
     def test_other_hosts_have_no_command_line_form(self) -> None:
-        for client in ("claude-desktop", "codex", "zeroclaw"):
+        for client in ("claude-desktop", "zeroclaw"):
             with self.subTest(client=client):
-                self.assertIsNone(self.connect("--client", client)["claude_mcp_add"])
+                self.assertIsNone(
+                    self.connect("--client", client)["mcp_add_command"]
+                )
 
 
 class HostTableTest(ConnectTestCase):
@@ -318,7 +344,14 @@ class HostTableTest(ConnectTestCase):
     def test_codex_uses_its_own_table_and_skills_directory(self) -> None:
         report = self.connect("--client", "codex")
         self.assertEqual(report["config_path"], "~/.codex/config.toml")
-        self.assertEqual(report["skills_dir"], "~/.codex/skills")
+        self.assertEqual(report["skills_dir"], "~/.agents/skills")
+        self.assertEqual(
+            report["skills_export"], "noetrail skills export ~/.agents/skills"
+        )
+        text = self.run_cli("connect", "--client", "codex")
+        self.assertIn(".codex/config.toml in a trusted project", text)
+        self.assertIn("repository-level .agents/skills", text)
+        self.assertNotIn("CODEX_HOME", text)
         snippet = report["snippet"]
         assert isinstance(snippet, str)
         self.assertTrue(snippet.startswith("[mcp_servers.noetrail]\n"))
