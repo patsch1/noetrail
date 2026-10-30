@@ -145,6 +145,8 @@ Copy the relevant sections from
 [`deploy/zeroclaw/security-profiles.example.toml`](../../deploy/zeroclaw/security-profiles.example.toml)
 into your live configuration, adjusting absolute paths and the agent alias to
 your deployment.
+`noetrail connect --client zeroclaw --launcher module` prints the
+`knowledge` server block in that shape with your instance's roots filled in.
 
 Extend the existing agent:
 

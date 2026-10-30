@@ -73,6 +73,9 @@ MODULE_THRESHOLDS = {
     # of assignments; everything else in it is a `raise` that only means
     # something if it has been shown to fire.
     "views.py": 95.0,
+    # Everything it prints is pasted into another program's configuration,
+    # where a wrong key or an unescaped path fails far from its cause.
+    "commands/connect.py": 95.0,
 }
 
 # The SSRF guard is spread over one file that also contains HTML parsing and a

@@ -144,6 +144,51 @@ def verify_installed_skills(
     return list(report["skills"])
 
 
+def verify_connect(
+    noetrail: Path,
+    python: Path,
+    data: Path,
+    config: Path,
+    neutral_directory: Path,
+) -> None:
+    """`connect` names this environment's interpreter and version, not a checkout's."""
+
+    def report(*arguments: str) -> dict[str, object]:
+        result = json.loads(
+            run(
+                str(noetrail), "--data-root", str(data), "--config-root",
+                str(config), "connect", "--json", *arguments,
+                cwd=neutral_directory,
+            ).stdout
+        )
+        if not isinstance(result, dict):
+            raise RuntimeError("installed connect did not return an object")
+        return result
+
+    version = run(
+        str(python), "-c",
+        "from noetrail.version import application_version as v;print(v())",
+        cwd=neutral_directory,
+    ).stdout.strip()
+    module = report("--client", "codex", "--launcher", "module")["server"]
+    uvx = report("--client", "claude-code", "--launcher", "uvx")["server"]
+    zeroclaw = report("--client", "zeroclaw", "--launcher", "module")["server"]
+    if not (isinstance(module, dict) and isinstance(uvx, dict)
+            and isinstance(zeroclaw, dict)):
+        raise RuntimeError("installed connect returned no server entry")
+    # Compared by directory: the interpreter itself is a link to the base
+    # Python, while its directory may be spelled through a linked /var.
+    named = Path(str(module["command"]))
+    if (named.name, named.parent.resolve()) != (python.name, python.parent.resolve()):
+        raise RuntimeError(
+            f"installed connect named {module['command']}, not {python}"
+        )
+    if uvx["args"][:2] != ["--from", f"noetrail=={version}"]:
+        raise RuntimeError("installed connect did not pin the installed version")
+    if any(str(value).startswith("PYTHONPATH=") for value in zeroclaw["args"]):
+        raise RuntimeError("installed connect added a checkout PYTHONPATH")
+
+
 def verify_mcp_retrieval(
     binary: Path, data: Path, config: Path, entry_id: str, neutral_directory: Path
 ) -> None:
@@ -338,6 +383,7 @@ def main() -> int:
             "noetrail-mcp.exe" if sys.platform == "win32" else "noetrail-mcp"
         )
         verify_mcp_retrieval(mcp, data, config, book["id"], root)
+        verify_connect(noetrail, python, data, config, root)
         run(*base, "index", "rebuild")
         verify_mcp_retrieval(mcp, data, config, book["id"], root)
 
@@ -371,6 +417,7 @@ def main() -> int:
                     "mcp": "stdio retrieval passed in both read modes, "
                     "with/without index",
                     "skills": f"{len(skills)} installed below share/noetrail/skills",
+                    "connect": "module and uvx launchers name this environment",
                 },
                 sort_keys=True,
             )

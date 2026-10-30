@@ -50,8 +50,9 @@ Notes that save a wasted run:
 - `mypy` is configured entirely in `pyproject.toml`. Do not pass arguments.
   `jsonrpc`, `layout`, `migrations`, and `schema` are held to `--strict`.
 - `tools/coverage.py` requires 80% overall and 95% for `migrations.py`,
-  `layout.py`, `jsonrpc.py`, `views.py`, and the SSRF path of
-  `bookmark_fetcher.py`. Do not lower a threshold to make a change pass.
+  `layout.py`, `jsonrpc.py`, `views.py`, `commands/connect.py`, and the SSRF
+  path of `bookmark_fetcher.py`. Do not lower a threshold to make a change
+  pass.
 - Never add `continue-on-error`, `--no-thresholds`, `# type: ignore`, or a
   `noqa` to get past a gate. If a suppression is genuinely right, say why in a
   comment on the same line.
