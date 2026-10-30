@@ -161,6 +161,26 @@ server alias. A host integration may add an overlay for its own routing and
 delivery behavior. The ZeroClaw overlay is `deploy/zeroclaw/AGENTS.md`; it is
 not required by the core package or by other MCP clients.
 
+Each skill is a directory with a `SKILL.md` in the Agent Skills format and an
+optional `agents/openai.yaml` overlay. A checkout has them in `skills/`; a
+wheel installs them below the environment's read-only `share/noetrail/skills`.
+Neither command below needs a vault:
+
+```sh
+noetrail skills path
+noetrail skills export ~/.agents/skills
+```
+
+`skills path` prints the directory the installed package resolved, and
+`--json` adds the skill names. `skills export DIRECTORY` copies every skill to
+`DIRECTORY/<name>/`, creating `DIRECTORY` if needed; point it at the directory
+your host loads skills from. It refuses to overwrite a skill directory that is
+not empty; `--force` replaces the shipped files and keeps any file you added.
+New files are readable only by you; a replaced file keeps its mode.
+It never writes through a symbolic link and refuses a target inside a
+Noetrail data or configuration root. With `uvx`, run the same commands as
+`uvx --from 'noetrail==<version>' noetrail skills export DIRECTORY`.
+
 ## Optimistic concurrency
 
 Every read returns a `sha256:...` revision. A mutation of an existing entry

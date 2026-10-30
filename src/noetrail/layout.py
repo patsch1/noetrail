@@ -134,6 +134,37 @@ def default_builtins_root(application_root: Path) -> Path:
     return canonical
 
 
+def _contains_skill(directory: Path) -> bool:
+    return directory.is_dir() and any(
+        (child / "SKILL.md").is_file() for child in directory.iterdir()
+    )
+
+
+def default_skills_root(application_root: Path | None = None) -> Path:
+    """Locate the portable agent skills in a checkout or installed package.
+
+    A checkout carries them at ``skills/``; a wheel installs them below
+    ``share/noetrail/skills``. There is no legacy location: skills were never
+    installed before ``share/noetrail/skills``.
+    """
+
+    application = (
+        application_root
+        if application_root is not None
+        else default_application_root()
+    )
+    for candidate in (
+        application / "skills",
+        application / "share" / "noetrail" / "skills",
+    ):
+        if _contains_skill(candidate):
+            return candidate.resolve()
+    raise LayoutError(
+        "No portable skills were found in the checkout or below "
+        f"share/noetrail/skills of {application}"
+    )
+
+
 def default_config_root() -> Path:
     configured = os.environ.get("XDG_CONFIG_HOME")
     base = Path(configured).expanduser() if configured else Path.home() / ".config"

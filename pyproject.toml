@@ -73,6 +73,42 @@ where = ["src"]
 "share/noetrail/.knowledge/packs/knowledge-core" = [
   ".knowledge/packs/knowledge-core/*",
 ]
+"share/noetrail/skills/capture-knowledge" = [
+  "skills/capture-knowledge/*.md",
+]
+"share/noetrail/skills/capture-knowledge/agents" = [
+  "skills/capture-knowledge/agents/*",
+]
+"share/noetrail/skills/fetch-bookmark-metadata" = [
+  "skills/fetch-bookmark-metadata/*.md",
+]
+"share/noetrail/skills/fetch-bookmark-metadata/agents" = [
+  "skills/fetch-bookmark-metadata/agents/*",
+]
+"share/noetrail/skills/import-knowledge" = [
+  "skills/import-knowledge/*.md",
+]
+"share/noetrail/skills/import-knowledge/agents" = [
+  "skills/import-knowledge/agents/*",
+]
+"share/noetrail/skills/manage-trash" = [
+  "skills/manage-trash/*.md",
+]
+"share/noetrail/skills/manage-trash/agents" = [
+  "skills/manage-trash/agents/*",
+]
+"share/noetrail/skills/review-knowledge" = [
+  "skills/review-knowledge/*.md",
+]
+"share/noetrail/skills/review-knowledge/agents" = [
+  "skills/review-knowledge/agents/*",
+]
+"share/noetrail/skills/save-bookmark" = [
+  "skills/save-bookmark/*.md",
+]
+"share/noetrail/skills/save-bookmark/agents" = [
+  "skills/save-bookmark/agents/*",
+]
 
 [tool.ruff]
 line-length = 88

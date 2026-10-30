@@ -31,6 +31,16 @@ This is synthetic schema-8 data used only by release acceptance.
 """
 
 
+INSTALLED_SKILLS = [
+    "capture-knowledge",
+    "fetch-bookmark-metadata",
+    "import-knowledge",
+    "manage-trash",
+    "review-knowledge",
+    "save-bookmark",
+]
+
+
 def run(
     *arguments: str,
     input_text: str | None = None,
@@ -94,6 +104,44 @@ def verify_import_namespace(python: Path, neutral_directory: Path) -> None:
         "import noetrail.cli, noetrail.mcp, noetrail.bookmark_fetcher\n"
     )
     run(str(python), "-c", probe, cwd=neutral_directory)
+
+
+def verify_installed_skills(
+    noetrail: Path, environment: Path, neutral_directory: Path
+) -> list[str]:
+    """The portable skills ship in the wheel and resolve to its share dir."""
+
+    expected = (environment / "share" / "noetrail" / "skills").resolve()
+    report = json.loads(
+        run(str(noetrail), "skills", "path", "--json", cwd=neutral_directory).stdout
+    )
+    if Path(report["skills_root"]) != expected:
+        raise RuntimeError(
+            f"installed skills resolved to {report['skills_root']}, "
+            f"not {expected}"
+        )
+    if report["skills"] != INSTALLED_SKILLS:
+        raise RuntimeError(f"installed skills are incomplete: {report['skills']}")
+    for name in INSTALLED_SKILLS:
+        for relative in ("SKILL.md", "agents/openai.yaml"):
+            if not (expected / name / relative).is_file():
+                raise RuntimeError(f"installed skill file missing: {name}/{relative}")
+    target = neutral_directory / "exported-skills"
+    exported = json.loads(
+        run(
+            str(noetrail),
+            "skills",
+            "export",
+            str(target),
+            "--json",
+            cwd=neutral_directory,
+        ).stdout
+    )
+    if len(exported["written"]) != 2 * len(INSTALLED_SKILLS) or sorted(
+        path.name for path in target.iterdir()
+    ) != INSTALLED_SKILLS:
+        raise RuntimeError("installed skills export did not copy every skill")
+    return list(report["skills"])
 
 
 def verify_mcp_retrieval(
@@ -188,6 +236,7 @@ def main() -> int:
         noetrail = binary / ("noetrail.exe" if sys.platform == "win32" else "noetrail")
         run(str(python), "-m", "pip", "install", "--no-deps", str(wheel))
         verify_import_namespace(python, root)
+        skills = verify_installed_skills(noetrail, environment, root)
         current = run(
             str(python),
             "-c",
@@ -321,6 +370,7 @@ def main() -> int:
                     "restore": "schema-8 backup recovered and validated",
                     "mcp": "stdio retrieval passed in both read modes, "
                     "with/without index",
+                    "skills": f"{len(skills)} installed below share/noetrail/skills",
                 },
                 sort_keys=True,
             )

@@ -53,6 +53,7 @@ from noetrail.commands.review import (
     command_review,
     command_trash,
 )
+from noetrail.commands.skills import command_skills_export, command_skills_path
 from noetrail.commands.vault_import import (
     command_import_basic_memory,
     command_import_obsidian,
@@ -254,6 +255,46 @@ def build_parser() -> argparse.ArgumentParser:
         help="machine-readable report instead of the printed walkthrough",
     )
     quickstart.set_defaults(handler=command_quickstart, mutating=True)
+
+    skills = subparsers.add_parser(
+        "skills",
+        help="locate or copy the portable agent skills; needs no vault",
+    )
+    skills_commands = skills.add_subparsers(dest="skills_command", required=True)
+    skills_path = skills_commands.add_parser(
+        "path",
+        help="print the directory holding the installed skills",
+    )
+    skills_path.add_argument(
+        "--json",
+        action="store_true",
+        help="report the directory and the skill names as JSON",
+    )
+    skills_path.set_defaults(handler=command_skills_path, mutating=False)
+    skills_export = skills_commands.add_parser(
+        "export",
+        help="copy every skill into DIRECTORY/<name>/ for an MCP host",
+    )
+    skills_export.add_argument(
+        "directory",
+        help="target directory; created when missing",
+    )
+    skills_export.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "overwrite the shipped files in existing skill directories; "
+            "files you added there are kept"
+        ),
+    )
+    skills_export.add_argument(
+        "--json",
+        action="store_true",
+        help="list the written paths as JSON",
+    )
+    # It writes files, so it declares itself mutating like `quickstart` does,
+    # although it runs before any vault lock and never opens a vault.
+    skills_export.set_defaults(handler=command_skills_export, mutating=True)
 
     capture = subparsers.add_parser("capture", help="create one vault entry")
     capture.add_argument(
@@ -938,8 +979,9 @@ def run_command(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     # Both create the instance they operate on, so neither can resolve a
     # layout or take the vault lock before its handler has run. `quickstart`
-    # takes the exclusive lock itself, around its own writes.
-    if args.command in {"init", "quickstart"}:
+    # takes the exclusive lock itself, around its own writes. `skills` reads
+    # only program files and never opens a vault.
+    if args.command in {"init", "quickstart", "skills"}:
         return args.handler(args)
     try:
         layout = resolve_layout(

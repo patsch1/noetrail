@@ -318,6 +318,33 @@ class PackagingMetadataTest(unittest.TestCase):
                 self.assertTrue(matches, pattern)
                 self.assertTrue(all(path.is_file() for path in matches), pattern)
 
+    def test_every_skill_file_is_installed_by_the_wheel(self) -> None:
+        # `graft skills` only reaches the sdist; a wheel installs exactly what
+        # data-files names. A skill that gains a file or a new skill directory
+        # must not be dropped from `share/noetrail/skills` without a failure.
+        data_files = self.metadata["tool"]["setuptools"]["data-files"]
+        installed: set[str] = set()
+        for destination, patterns in data_files.items():
+            for pattern in patterns:
+                for path in REPOSITORY_ROOT.glob(pattern):
+                    installed.add(f"{destination}/{path.name}")
+        skills_root = REPOSITORY_ROOT / "skills"
+        shipped = {
+            "share/noetrail/" + path.relative_to(REPOSITORY_ROOT).as_posix()
+            for path in skills_root.rglob("*")
+            if path.is_file()
+            and not any(
+                part.startswith(".")
+                for part in path.relative_to(skills_root).parts
+            )
+        }
+        self.assertEqual(len({name.split("/")[3] for name in shipped}), 6)
+        self.assertEqual(shipped - installed, set())
+        acceptance = (
+            REPOSITORY_ROOT / "tools" / "release_acceptance.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("verify_installed_skills", acceptance)
+
     def test_ci_is_synthetic_and_covers_supported_python_versions(self) -> None:
         workflow = (
             REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml"
