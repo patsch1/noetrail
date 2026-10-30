@@ -6,25 +6,8 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
-- add `noetrail connect --client NAME --write` to merge the server entry
-  into a JSON host's configuration file (Claude Code, Claude Desktop, Cursor,
-  Gemini CLI, VS Code, OpenCode). It previews the change and writes it only
-  with `--apply`, backing the existing file up to
-  `FILE.<UTC timestamp>.bak` first and keeping every other server and key.
-  A different existing `noetrail` entry is replaced only with `--force`.
-  `--config-file PATH` chooses another file. It refuses TOML hosts (Codex,
-  ZeroClaw), files that are not plain JSON, symbolic links, a host directory
-  that does not exist, and any path inside a Noetrail root. `--json` adds a
-  `write` object. Without `--write`, `connect` still writes nothing.
-- add Cursor, Gemini CLI, VS Code and OpenCode to `noetrail connect
-  --client`, as `cursor`, `gemini`, `vscode` and `opencode`. Each block uses
-  the host's own key and fields: `"type": "stdio"` for Cursor and VS Code,
-  `servers` for VS Code, and for OpenCode `mcp` with `"type": "local"` and the
-  command and its arguments as one array. Gemini CLI gets a
-  `gemini mcp add --scope user` line and VS Code a `code --add-mcp` line in
-  `mcp_add_command`. The text output names each host's other skills
-  directories and says which hosts share `~/.agents/skills`, so one
-  `noetrail skills export` there serves them all. It still writes nothing.
+## 0.11.0a2 - 2026-10-31
+
 - ship the six portable agent skills in the wheel, installed below
   `share/noetrail/skills`; before, only the source distribution carried them,
   so a `uvx` or `pip` install could not hand them to an MCP host. Add
@@ -45,6 +28,25 @@ All notable user-visible changes will be documented here. The project follows
   nothing. `noetrail quickstart --client NAME` prints the same block in place
   of the generic one and adds it under `connect` in `--json`; `mcp_config`
   is unchanged.
+- add Cursor, Gemini CLI, VS Code and OpenCode to `noetrail connect
+  --client`, as `cursor`, `gemini`, `vscode` and `opencode`. Each block uses
+  the host's own key and fields: `"type": "stdio"` for Cursor and VS Code,
+  `servers` for VS Code, and for OpenCode `mcp` with `"type": "local"` and the
+  command and its arguments as one array. Gemini CLI gets a
+  `gemini mcp add --scope user` line and VS Code a `code --add-mcp` line in
+  `mcp_add_command`. The text output names each host's other skills
+  directories and says which hosts share `~/.agents/skills`, so one
+  `noetrail skills export` there serves them all. It still writes nothing.
+- add `noetrail connect --client NAME --write` to merge the server entry
+  into a JSON host's configuration file (Claude Code, Claude Desktop, Cursor,
+  Gemini CLI, VS Code, OpenCode). It previews the change and writes it only
+  with `--apply`, backing the existing file up to
+  `FILE.<UTC timestamp>.bak` first and keeping every other server and key.
+  A different existing `noetrail` entry is replaced only with `--force`.
+  `--config-file PATH` chooses another file. It refuses TOML hosts (Codex,
+  ZeroClaw), files that are not plain JSON, symbolic links, a host directory
+  that does not exist, and any path inside a Noetrail root. `--json` adds a
+  `write` object. Without `--write`, `connect` still writes nothing.
 
 ## 0.11.0a1 - 2026-10-30
 
