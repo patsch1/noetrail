@@ -10,10 +10,11 @@ command as one array, and ZeroClaw in TOML wrapped in `env -i`. Each
 difference is one more thing to look up before the first answer.
 
 `connect` prints the block for a named host with this instance's absolute
-roots, where the host reads it from, and where the host loads skills from. It
-writes nothing: not the host's configuration, not the instance, not a lock
-file. Everything it knows about a host is in `HOSTS`, so adding one is a table
-entry and a test, not a new code path.
+roots, where the host reads it from, and where the host loads skills from. By
+default it writes nothing: not the host's configuration, not the instance, not
+a lock file. `--write --apply` merges the entry into a JSON host's file, see
+`connect_write`. Everything it knows about a host is in `HOSTS`, so adding one
+is a table entry and a test, not a new code path.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from pathlib import Path
 import shlex
 import sys
 
+from noetrail.commands import connect_write
 from noetrail.errors import ConfigurationError, InvalidRequest
 from noetrail.layout import (
     LayoutError,
@@ -740,7 +742,25 @@ def resolve_connect_layout(args: argparse.Namespace) -> NoetrailLayout:
         ) from exc
 
 
+def check_write_options(args: argparse.Namespace) -> None:
+    if not args.write:
+        given = [
+            option
+            for option, value in (
+                ("--apply", args.apply),
+                ("--config-file", args.config_file is not None),
+                ("--force", args.force),
+            )
+            if value
+        ]
+        if given:
+            raise InvalidRequest(f"{', '.join(given)} only applies with --write")
+    elif args.client is None:
+        raise InvalidRequest("--write needs --client NAME")
+
+
 def command_connect(args: argparse.Namespace) -> int:
+    check_write_options(args)
     if args.client is None:
         if args.json:
             print(
@@ -771,8 +791,27 @@ def command_connect(args: argparse.Namespace) -> int:
         layout,
         explicit_builtins=builtins_requested(args),
     )
+    if not args.write:
+        if args.json:
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            print(render_text(host, report))
+        return 0
+
+    plan = connect_write.plan_write(
+        host, report, layout, args, platform=platform_name(), cwd=Path.cwd()
+    )
+    if args.apply:
+        connect_write.apply(plan)
     if args.json:
-        print(json.dumps(report, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {**report, "write": plan.as_dict()}, ensure_ascii=False, indent=2
+            )
+        )
     else:
-        print(render_text(host, report))
+        print(connect_write.render_plan(host, plan, report))
+    # A refusal is shown first, so a preview can show what it refused.
+    if plan.error is not None:
+        raise plan.error
     return 0

@@ -76,6 +76,9 @@ MODULE_THRESHOLDS = {
     # Everything it prints is pasted into another program's configuration,
     # where a wrong key or an unescaped path fails far from its cause.
     "commands/connect.py": 95.0,
+    # It rewrites another program's configuration file; every refusal in it
+    # stands between a user's file and a guess.
+    "commands/connect_write.py": 95.0,
 }
 
 # The SSRF guard is spread over one file that also contains HTML parsing and a

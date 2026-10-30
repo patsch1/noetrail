@@ -54,6 +54,9 @@ Print the configuration block for one MCP host; `connect` writes nothing:
 .venv/bin/noetrail connect --client claude-code --path "$DEMO_ROOT"
 ```
 
+For a JSON host, `--write` previews merging the block into its configuration
+file and `--write --apply` does it, after a backup.
+
 Every command below repeats the two roots explicitly, because a real
 installation keeps them apart from the program:
 
