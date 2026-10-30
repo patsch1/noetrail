@@ -6,6 +6,15 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- ship the six portable agent skills in the wheel, installed below
+  `share/noetrail/skills`; before, only the source distribution carried them,
+  so a `uvx` or `pip` install could not hand them to an MCP host. Add
+  `noetrail skills path` to print where they are and
+  `noetrail skills export DIRECTORY` to copy them into a host's skills
+  directory. Neither command needs a vault; `export` refuses to overwrite an
+  existing skill directory without `--force` and never writes through a
+  symbolic link or into a data or configuration root.
+
 ## 0.11.0a1 - 2026-10-30
 
 - remove the compatibility shims `tools/know.py`, `tools/knowledge_mcp.py`,

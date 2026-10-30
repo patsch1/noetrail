@@ -87,10 +87,13 @@ The former `knowledge`, `knowledge-mcp`, and `knowledge-bookmark-fetcher`
 commands remain compatibility aliases. New integrations should use the
 Noetrail names; existing ZeroClaw deployments can migrate deliberately.
 
-It also installs the built-in specification, templates, schemas, and bundled
-packs below the environment's read-only `share/noetrail/`
-directory. Program resources never need to be copied into the private data
-root.
+It also installs the built-in specification, templates, schemas, bundled
+packs, and the portable agent skills below the environment's read-only
+`share/noetrail/` directory. Program resources never need to be copied into
+the private data root. `noetrail skills path` prints where the skills are, and
+`noetrail skills export DIRECTORY` copies them to the directory an MCP host
+loads skills from; see
+[Portable skills and host overlays](integrations/mcp-clients.md#portable-skills-and-host-overlays).
 
 ## Initialize
 
