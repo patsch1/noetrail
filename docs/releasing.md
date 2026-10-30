@@ -9,11 +9,12 @@ The first public alpha is `0.10.0a1`, available from
 preserves Noetrail's internal
 `0.8.x` and `0.9.x` lineage instead of resetting the project to `0.1.0`.
 
-The current alpha is `0.11.0a1`, the first of the `0.11.0` line. It removes
-the `tools/` compatibility shims announced for `0.11.0`, which breaks a
-deployment that still invokes one of those paths; everything else is
-unchanged from `0.10.0a7`. The core schema remains 12 and the index format is
-unchanged. See its [release notes](releases/0.11.0a1.md).
+The current alpha is `0.11.0a2`, the second of the `0.11.0` line. It is
+about installing Noetrail into an MCP host: the portable skills ship in the
+wheel, `noetrail connect` prints the configuration for eight hosts, and an
+opt-in `--write` merges it into a JSON host's file. The `tools/` shim removal
+from `0.11.0a1` remains. The core schema remains 12 and the index format is
+unchanged. See its [release notes](releases/0.11.0a2.md).
 
 The intended channels are:
 
@@ -143,12 +144,12 @@ release channel or current alpha changes:
 | `ROADMAP.md` | "CodeQL scans public changes" |
 | `README.md` | "source repository is public" |
 
-**Published `0.11.0a1` on production PyPI**
+**Published `0.11.0a2` on production PyPI**
 
 | Page | Updated package-publication statement |
 | --- | --- |
 | `README.md` | "available on PyPI, GitHub and TestPyPI" |
-| `docs/quickstart.md` | "`0.11.0a1` is on PyPI" |
+| `docs/quickstart.md` | "`0.11.0a2` is on PyPI" |
 | `docs/installation.md` | "The alpha is on PyPI" |
 | `docs/integrations/mcp-clients.md` | "The alpha is on PyPI" |
 
@@ -191,7 +192,7 @@ and [redacting comment revisions](https://docs.github.com/en/communities/moderat
    failure must be resolved with an explicitly approved rewrite or a new clean
    public repository before visibility changes.
 6. Review compatibility and rollback notes.
-7. Create annotated tag `v0.11.0a1` only after publication approval.
+7. Create annotated tag `v0.11.0a2` only after publication approval.
 
 ## Artifact workflow
 
@@ -221,12 +222,12 @@ After reviewing the artifact, create the prerelease from the downloaded files
 without rebuilding them:
 
 ```sh
-gh release create v0.11.0a1 \
+gh release create v0.11.0a2 \
   --prerelease \
-  --title "Noetrail 0.11.0a1" \
-  --notes-file docs/releases/0.11.0a1.md \
-  dist/noetrail-0.11.0a1-py3-none-any.whl \
-  dist/noetrail-0.11.0a1.tar.gz \
+  --title "Noetrail 0.11.0a2" \
+  --notes-file docs/releases/0.11.0a2.md \
+  dist/noetrail-0.11.0a2-py3-none-any.whl \
+  dist/noetrail-0.11.0a2.tar.gz \
   dist/noetrail-sbom.cdx.json \
   dist/SHA256SUMS.txt
 ```
@@ -239,7 +240,7 @@ Download the distributions, SBOM and checksum manifest into the same directory;
 the manifest uses filenames relative to that directory, without build paths:
 
 ```sh
-gh attestation verify noetrail-0.11.0a1-py3-none-any.whl --repo patsch1/noetrail
+gh attestation verify noetrail-0.11.0a2-py3-none-any.whl --repo patsch1/noetrail
 sha256sum --check SHA256SUMS.txt
 ```
 

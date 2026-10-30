@@ -7,18 +7,20 @@ and shipped is in [the decision log](docs/internal/decision-log.md).
 
 ## Where it stands
 
-`0.11.0a1` is the current public alpha, available as a GitHub prerelease and on
-PyPI and TestPyPI. It opens the `0.11.0` line by removing the `tools/`
-compatibility shims; `0.10.0a7`, the last alpha of the `0.10.0` line, made the
-optional index's freshness check faster and its refresh after a write
-proportional to the change, and added two labelled empty-result fallback
-stages to hybrid search. The first public alpha was `0.10.0a1`. The vault
-format is at core schema 12, the CLI and the Noetrail MCP server share one
-validated code path, custom types are declarative schema packs, and the
-runtime has no third-party dependencies. Migrations are deterministic and
-previewable, and every release
-is checked by building it, running the suite from the unpacked source
-distribution, and exercising an installed wheel.
+`0.11.0a2` is the current public alpha, available as a GitHub prerelease and on
+PyPI and TestPyPI. It ships the portable skills in the wheel and adds
+`noetrail connect`, which prints the MCP configuration for eight hosts and can
+merge it into a JSON host's file on request. `0.11.0a1` opened the `0.11.0`
+line by removing the `tools/` compatibility shims; `0.10.0a7`, the last alpha
+of the `0.10.0` line, made the optional index's freshness check faster and its
+refresh after a write proportional to the change, and added two labelled
+empty-result fallback stages to hybrid search. The first public alpha was
+`0.10.0a1`. The vault format is at core schema 12, the CLI and the Noetrail
+MCP server share one validated code path, custom types are declarative schema
+packs, and the runtime has no third-party dependencies. Migrations are
+deterministic and previewable, and every release is checked by building it,
+running the suite from the unpacked source distribution, and exercising an
+installed wheel.
 
 Alpha means the CLI and MCP surfaces can still change within a minor release.
 On-disk changes cannot: they need an ordered dry-run migration and a documented
