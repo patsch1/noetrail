@@ -1,0 +1,11 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "noetrail-candidate",
+    "namespace": "zeroclaw"
+  },
+  "data": {
+    "revision": "31c38ca39af244fe96db28084fdde533dd195e48"
+  }
+}
