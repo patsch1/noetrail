@@ -6,6 +6,15 @@ All notable user-visible changes will be documented here. The project follows
 
 ## Unreleased
 
+- add Cursor, Gemini CLI, VS Code and OpenCode to `noetrail connect
+  --client`, as `cursor`, `gemini`, `vscode` and `opencode`. Each block uses
+  the host's own key and fields: `"type": "stdio"` for Cursor and VS Code,
+  `servers` for VS Code, and for OpenCode `mcp` with `"type": "local"` and the
+  command and its arguments as one array. Gemini CLI gets a
+  `gemini mcp add --scope user` line and VS Code a `code --add-mcp` line in
+  `mcp_add_command`. The text output names each host's other skills
+  directories and says which hosts share `~/.agents/skills`, so one
+  `noetrail skills export` there serves them all. It still writes nothing.
 - ship the six portable agent skills in the wheel, installed below
   `share/noetrail/skills`; before, only the source distribution carried them,
   so a `uvx` or `pip` install could not hand them to an MCP host. Add
