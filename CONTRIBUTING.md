@@ -82,7 +82,8 @@ three modules that parse arbitrary JSON from frontmatter or from the wire stay
 at the base level, where `object` plus an explicit narrowing check is the
 honest annotation. `tools/coverage.py` traces the CLI and MCP subprocesses the
 suite starts, requires 80% overall, and 95% for `migrations.py`, `layout.py`,
-`jsonrpc.py`, `views.py` and the SSRF path of `bookmark_fetcher.py`.
+`jsonrpc.py`, `views.py`, `commands/connect.py` and the SSRF path of
+`bookmark_fetcher.py`.
 
 `make check` also runs `noetrail validate`, which validates only a maintainer's
 local ignored vault and is not part of public CI. Contributors do not need a

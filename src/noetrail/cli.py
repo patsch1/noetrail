@@ -19,6 +19,7 @@ import sys
 from noetrail.body import load_body_headings
 from noetrail.commands.bookmark_refresh import command_refresh_bookmark
 from noetrail.commands.capture import command_bookmark, command_capture, command_recipe
+from noetrail.commands.connect import LAUNCHERS, command_connect
 from noetrail.commands.curate import command_candidates, command_merge
 from noetrail.commands.edit import (
     command_attach,
@@ -254,7 +255,46 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="machine-readable report instead of the printed walkthrough",
     )
+    quickstart.add_argument(
+        "--client",
+        help=(
+            "print the configuration for this MCP host instead of the "
+            "generic block; see `noetrail connect`"
+        ),
+    )
     quickstart.set_defaults(handler=command_quickstart, mutating=True)
+
+    connect = subparsers.add_parser(
+        "connect",
+        help="print one MCP host's server configuration; writes nothing",
+    )
+    connect.add_argument(
+        "--client",
+        help="the host to configure; omit it to list the supported hosts",
+    )
+    connect.add_argument(
+        "--launcher",
+        choices=LAUNCHERS,
+        default="console",
+        help=(
+            "how the host starts the server: the noetrail-mcp command "
+            "(default), this interpreter with -m noetrail.mcp, or uvx pinned "
+            "to the installed version"
+        ),
+    )
+    connect.add_argument(
+        "--path",
+        help=(
+            "instance directory holding data/ and config/, as given to "
+            "quickstart (default without root options: ~/noetrail)"
+        ),
+    )
+    connect.add_argument(
+        "--json",
+        action="store_true",
+        help="report the configuration as JSON",
+    )
+    connect.set_defaults(handler=command_connect, mutating=False)
 
     skills = subparsers.add_parser(
         "skills",
@@ -980,8 +1020,10 @@ def run_command(argv: list[str] | None = None) -> int:
     # Both create the instance they operate on, so neither can resolve a
     # layout or take the vault lock before its handler has run. `quickstart`
     # takes the exclusive lock itself, around its own writes. `skills` reads
-    # only program files and never opens a vault.
-    if args.command in {"init", "quickstart", "skills"}:
+    # only program files and never opens a vault. `connect` only reads the
+    # layout, and resolves it itself so it can find a quickstart instance;
+    # it loads no schema and takes no lock, which would create a lock file.
+    if args.command in {"init", "quickstart", "skills", "connect"}:
         return args.handler(args)
     try:
         layout = resolve_layout(

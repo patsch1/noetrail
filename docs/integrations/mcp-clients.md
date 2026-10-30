@@ -111,6 +111,49 @@ Replace the roots with the paths returned by quickstart. Use the absolute
 `uvx` path if the client cannot resolve it. This launches the published alpha;
 it does not require a separately installed `noetrail-mcp` executable.
 
+## Connect a known host
+
+For the hosts below, `noetrail connect` prints the block in the host's own
+format and key, with this instance's absolute roots, together with the file it
+belongs in and the directory the host loads skills from:
+
+```sh
+noetrail connect --client claude-code
+```
+
+| `--client` | Host | Configuration | Skills directory |
+| --- | --- | --- | --- |
+| `claude-code` | Claude Code | `.mcp.json` in the project, or the printed `claude mcp add --scope user` line | `~/.claude/skills` |
+| `claude-desktop` | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS), `%APPDATA%\Claude\claude_desktop_config.json` (Windows) | none |
+| `codex` | Codex CLI | `[mcp_servers.noetrail]` in `~/.codex/config.toml` | `~/.codex/skills` |
+| `zeroclaw` | ZeroClaw | `[[mcp.servers]]` in `~/.zeroclaw/config.toml`, in the `env -i` shape of the [deploy example](../../deploy/zeroclaw/security-profiles.example.toml) | `<zeroclaw-install>/shared/skills/knowledge-vault` |
+
+`connect` writes nothing: not the host's file, not the instance. Paste the
+block yourself, then run the printed `noetrail skills export DIRECTORY` line
+if the host loads skills. Without `--client` it lists the supported hosts.
+
+- Root options and `NOETRAIL_DATA_ROOT` select the instance as for every other
+  command. Without them, `connect` uses the instance `quickstart` created:
+  `~/noetrail`, or the directory given with `--path`.
+- `--launcher console` (default) runs `noetrail-mcp`. `--launcher module`
+  runs the interpreter that ran `connect` with `-m noetrail.mcp`, for a host
+  that cannot resolve console scripts. `--launcher uvx` runs
+  `uvx --from noetrail==<installed version> noetrail-mcp`.
+- `noetrail quickstart --client NAME` prints the same block in place of the
+  generic one.
+- `--json` returns a fixed set of keys: `client`, `config_path` (for the
+  current platform, `~` unexpanded, `null` where the host has no documented
+  file), `format` (`json` or `toml`), `launcher`, `server` (the entry as it
+  appears in the file), `snippet` (the text to paste), `skills_dir` and
+  `skills_export` (`null` without a skills directory), and `claude_mcp_add`
+  (`null` except for `claude-code`). `quickstart --client NAME --json`
+  returns the same object under `connect` and keeps `mcp_config` unchanged.
+
+The host formats were taken from each vendor's documentation as of 2026-10-30;
+a host can change them in a later release. Cursor, Gemini CLI, VS Code and
+OpenCode are planned for the next change. For any other host, use the generic
+block below.
+
 ## Configure a desktop or editor host
 
 Most hosts accept this JSON shape. The key `noetrail` is only the local alias;

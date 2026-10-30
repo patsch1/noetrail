@@ -21,6 +21,14 @@ import json
 from pathlib import Path
 import uuid
 
+from noetrail.commands.connect import (
+    DEFAULT_INSTANCE_DIRECTORY,
+    builtins_requested,
+    connection,
+    find_host,
+    render_text,
+    supported_clients,
+)
 from noetrail.commands.maintenance import initialize_instance
 from noetrail.errors import InvalidRequest
 from noetrail.frontmatter import pack_builtin_metadata, parse_frontmatter
@@ -32,7 +40,7 @@ from noetrail.normalize import now_iso, slugify
 from noetrail.schema import SchemaRegistry
 from noetrail.store import atomic_write_entry, entry_directory, entry_paths, vault_lock
 
-DEFAULT_DIRECTORY = "noetrail"
+DEFAULT_DIRECTORY = DEFAULT_INSTANCE_DIRECTORY
 
 # Deterministic, so a repeated quickstart recognises its own entries instead
 # of writing a second copy of them.
@@ -184,6 +192,8 @@ def command_quickstart(args: argparse.Namespace) -> int:
             "quickstart creates a separated instance; use --data-root and "
             "--config-root instead of --root"
         )
+    # Refused before anything is created, like any other bad argument.
+    host = find_host(args.client) if args.client is not None else None
     base = (
         Path(args.path).expanduser()
         if args.path
@@ -199,6 +209,16 @@ def command_quickstart(args: argparse.Namespace) -> int:
         created = write_samples(root, registry)
 
     configuration = mcp_configuration(layout)
+    connected = (
+        connection(
+            host,
+            "console",
+            layout,
+            explicit_builtins=builtins_requested(args),
+        )
+        if host is not None
+        else None
+    )
     roots = [
         "--data-root",
         str(layout.data_root),
@@ -217,6 +237,7 @@ def command_quickstart(args: argparse.Namespace) -> int:
                     "created_entries": created,
                     "root_arguments": roots,
                     "mcp_config": configuration,
+                    "connect": connected,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -233,7 +254,16 @@ def command_quickstart(args: argparse.Namespace) -> int:
     print(f"  noetrail {joined} search relations")
     print(f"  noetrail {joined} review")
     print(f"  noetrail {joined} inventory\n")
+    if host is not None and connected is not None:
+        print("Connect an agent:\n")
+        print(render_text(host, connected))
+        print("\nNext: docs/quickstart.md")
+        return 0
     print("Connect an agent - add this to your MCP client's configuration:\n")
     print(json.dumps(configuration, ensure_ascii=False, indent=2))
-    print("\nNext: docs/quickstart.md and docs/integrations/mcp-clients.md")
+    print(
+        f"\nFor a known host: noetrail {joined} connect --client NAME"
+        f" ({supported_clients()})"
+    )
+    print("Next: docs/quickstart.md and docs/integrations/mcp-clients.md")
     return 0
